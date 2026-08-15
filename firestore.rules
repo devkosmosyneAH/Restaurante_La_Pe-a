@@ -1,0 +1,10 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // La aplicación usa Realtime Database; no expone colecciones Firestore.
+    // Mantener denegación por defecto evita habilitar datos por accidente.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

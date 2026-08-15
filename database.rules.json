@@ -1,0 +1,129 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    "restaurantes": {
+      "$restaurantId": {
+        ".write": "$restaurantId == 'la_pena_001' && auth != null && root.child('auth').child(auth.uid).child('admin').val() == true",
+
+        "productos": {
+          ".read": "$restaurantId == 'la_pena_001'",
+          "$productoId": {
+            ".read": "$restaurantId == 'la_pena_001'",
+            ".write": "$restaurantId == 'la_pena_001' && auth != null && root.child('auth').child(auth.uid).child('admin').val() == true",
+            ".validate": "newData.child('deleted_at').exists() || (newData.hasChildren(['id', 'restaurant_id', 'nombre', 'precio']) && newData.child('restaurant_id').val() == $restaurantId && newData.child('nombre').isString() && newData.child('nombre').val().length > 0 && newData.child('precio').isNumber() && newData.child('precio').val() >= 0)"
+          }
+        },
+
+        "disponibilidad": {
+          ".read": "$restaurantId == 'la_pena_001' && auth != null && (root.child('auth').child(auth.uid).child('admin').val() == true || root.child('auth').child(auth.uid).child('roles').val().contains('mesero') || root.child('auth').child(auth.uid).child('roles').val().contains('cajero'))",
+          ".indexOn": ["u"],
+          "$productoId": {
+            ".validate": "newData.hasChildren(['d', 'u', 'v']) && newData.child('d').isBoolean() && newData.child('u').isNumber() && newData.child('v').isString()"
+          }
+        },
+
+        "categorias": {
+          ".read": "$restaurantId == 'la_pena_001'",
+          "$categoriaId": {
+            ".read": "$restaurantId == 'la_pena_001'",
+            ".write": "$restaurantId == 'la_pena_001' && auth != null && root.child('auth').child(auth.uid).child('admin').val() == true",
+            ".validate": "newData.child('deleted_at').exists() || (newData.hasChildren(['id', 'restaurant_id', 'nombre']) && newData.child('restaurant_id').val() == $restaurantId && newData.child('nombre').isString() && newData.child('nombre').val().length > 0)"
+          }
+        },
+
+        "variantes": {
+          ".read": "$restaurantId == 'la_pena_001'",
+          "$varianteId": {
+            ".read": "$restaurantId == 'la_pena_001'",
+            ".write": "$restaurantId == 'la_pena_001' && auth != null && root.child('auth').child(auth.uid).child('admin').val() == true",
+            ".validate": "newData.child('deleted_at').exists() || (newData.hasChildren(['id', 'producto_id', 'nombre', 'precio']) && newData.child('nombre').isString() && newData.child('precio').isNumber() && newData.child('precio').val() >= 0)"
+          }
+        },
+
+        "public_config": {
+          ".read": "$restaurantId == 'la_pena_001'",
+          ".write": "$restaurantId == 'la_pena_001' && auth != null && root.child('auth').child(auth.uid).child('admin').val() == true",
+          ".validate": "newData.hasChildren()"
+        },
+        "public_gallery_images": {
+          ".read": "$restaurantId == 'la_pena_001'",
+          "$imageId": {
+            ".read": "$restaurantId == 'la_pena_001'",
+            ".write": "$restaurantId == 'la_pena_001' && auth != null && root.child('auth').child(auth.uid).child('admin').val() == true",
+            ".validate": "newData.child('deleted_at').exists() || (newData.hasChildren(['id', 'restaurant_id', 'tipo', 'image_url']) && newData.child('restaurant_id').val() == $restaurantId && (newData.child('tipo').val() == 'portada' || newData.child('tipo').val() == 'galeria') && newData.child('image_url').isString())"
+          }
+        },
+
+        "mesas": {
+          "$mesaId": {
+            ".read": "$restaurantId == 'la_pena_001' && auth != null && (root.child('auth').child(auth.uid).child('roles').val().contains('mesero') || root.child('auth').child(auth.uid).child('admin').val() == true)",
+            ".write": "$restaurantId == 'la_pena_001' && auth != null && root.child('auth').child(auth.uid).child('admin').val() == true"
+          }
+        },
+        "pedidos": {
+          "$pedidoId": {
+            ".read": "$restaurantId == 'la_pena_001' && auth != null && (root.child('auth').child(auth.uid).child('admin').val() == true || root.child('auth').child(auth.uid).child('roles').val().contains('mesero') || root.child('auth').child(auth.uid).child('roles').val().contains('cocina'))",
+            ".write": "$restaurantId == 'la_pena_001' && auth != null && (root.child('auth').child(auth.uid).child('admin').val() == true || root.child('auth').child(auth.uid).child('roles').val().contains('mesero'))"
+          }
+        },
+        "pedido_items": {
+          "$itemId": {
+            ".read": "$restaurantId == 'la_pena_001' && auth != null && (root.child('auth').child(auth.uid).child('admin').val() == true || root.child('auth').child(auth.uid).child('roles').val().contains('mesero') || root.child('auth').child(auth.uid).child('roles').val().contains('cocina'))",
+            ".write": "$restaurantId == 'la_pena_001' && auth != null && (root.child('auth').child(auth.uid).child('admin').val() == true || root.child('auth').child(auth.uid).child('roles').val().contains('mesero'))"
+          }
+        },
+        "llamados_mesero": {
+          "$llamadoId": {
+            ".read": "$restaurantId == 'la_pena_001' && auth != null && (root.child('auth').child(auth.uid).child('admin').val() == true || root.child('auth').child(auth.uid).child('roles').val().contains('mesero'))",
+            ".write": "$restaurantId == 'la_pena_001' && auth != null && (root.child('auth').child(auth.uid).child('roles').val().contains('mesero') || root.child('auth').child(auth.uid).child('admin').val() == true)"
+          }
+        },
+        "cotizaciones": {
+          "$id": {
+            ".read": "$restaurantId == 'la_pena_001' && ((auth != null && root.child('auth').child(auth.uid).child('admin').val() == true) || (auth == null && data.child('origen').val() == 'publica'))",
+            ".write": "$restaurantId == 'la_pena_001' && ((auth != null && root.child('auth').child(auth.uid).child('admin').val() == true) || (auth == null && !data.exists() && newData.child('origen').val() == 'publica' && newData.child('restaurant_id').val() == $restaurantId))",
+            ".validate": "newData.child('id').val() == $id && newData.child('restaurant_id').val() == $restaurantId && ((auth != null && root.child('auth').child(auth.uid).child('admin').val() == true) || (newData.hasChildren(['cliente_nombre', 'cliente_telefono', 'cliente_email', 'estado', 'origen', 'subtotal', 'total', 'created_at', 'item_ids']) && newData.child('estado').val() == 'pendiente' && newData.child('origen').val() == 'publica' && newData.child('item_ids').hasChildren() && newData.child('cliente_nombre').isString() && newData.child('cliente_nombre').val().length > 0 && newData.child('cliente_nombre').val().length <= 120 && newData.child('cliente_telefono').isString() && newData.child('cliente_telefono').val().length > 0 && newData.child('cliente_telefono').val().length <= 40 && newData.child('cliente_email').isString() && newData.child('cliente_email').val().length <= 160 && newData.child('subtotal').isNumber() && newData.child('subtotal').val() >= 0 && newData.child('total').isNumber() && newData.child('total').val() >= 0))"
+          }
+        },
+        "cotizacion_items": {
+          "$id": { ".read": "$restaurantId == 'la_pena_001' && ((auth != null && root.child('auth').child(auth.uid).child('admin').val() == true) || (auth == null && data.child('publico').val() == true))", ".write": "$restaurantId == 'la_pena_001' && ((auth != null && root.child('auth').child(auth.uid).child('admin').val() == true) || (auth == null && !data.exists() && newData.child('publico').val() == true && newData.child('restaurant_id').val() == $restaurantId))", ".validate": "(auth != null && root.child('auth').child(auth.uid).child('admin').val() == true) || (newData.child('id').val() == $id && newData.child('restaurant_id').val() == $restaurantId && newData.hasChildren(['cotizacion_id', 'producto_nombre', 'cantidad', 'precio_unitario', 'subtotal', 'publico']) && newData.child('publico').val() == true && newData.child('producto_nombre').isString() && newData.child('producto_nombre').val().length > 0 && newData.child('producto_nombre').val().length <= 160 && newData.child('cantidad').isNumber() && newData.child('cantidad').val() > 0 && newData.child('cantidad').val() <= 100 && newData.child('precio_unitario').isNumber() && newData.child('precio_unitario').val() >= 0 && newData.child('subtotal').isNumber() && newData.child('subtotal').val() >= 0)" }
+        },
+        "reservaciones": {
+          "$id": { ".read": "$restaurantId == 'la_pena_001' && auth != null && root.child('auth').child(auth.uid).child('admin').val() == true", ".write": "$restaurantId == 'la_pena_001' && auth != null && root.child('auth').child(auth.uid).child('admin').val() == true" }
+        },
+        "clientes": {
+          "$id": { ".read": "$restaurantId == 'la_pena_001' && auth != null && (root.child('auth').child(auth.uid).child('admin').val() == true || root.child('auth').child(auth.uid).child('roles').val().contains('cajero'))", ".write": "$restaurantId == 'la_pena_001' && auth != null && (root.child('auth').child(auth.uid).child('admin').val() == true || root.child('auth').child(auth.uid).child('roles').val().contains('cajero'))" }
+        },
+        "ventas": {
+          "$id": { ".read": "$restaurantId == 'la_pena_001' && auth != null && (root.child('auth').child(auth.uid).child('admin').val() == true || root.child('auth').child(auth.uid).child('roles').val().contains('cajero'))", ".write": "$restaurantId == 'la_pena_001' && auth != null && (root.child('auth').child(auth.uid).child('admin').val() == true || root.child('auth').child(auth.uid).child('roles').val().contains('cajero'))" }
+        },
+        "usuarios": {
+          "$usuarioId": { ".read": "$restaurantId == 'la_pena_001' && auth != null && (auth.uid == $usuarioId || root.child('auth').child(auth.uid).child('admin').val() == true)", ".write": "$restaurantId == 'la_pena_001' && auth != null && root.child('auth').child(auth.uid).child('admin').val() == true" }
+        }
+      }
+    },
+
+  "sync_audit": {
+    "$auditId": {
+      ".read": "auth != null && data.exists() && data.child('restaurant_id').val() == 'la_pena_001'",
+      ".write": "auth != null && newData.child('restaurant_id').val() == 'la_pena_001'"
+    }
+  },
+
+    "auth": {
+      "$uid": {
+        ".read": "auth != null && $uid == auth.uid",
+        ".write": false
+      }
+    },
+
+    "users": {
+      "$uid": {
+        ".read": "auth != null && $uid == auth.uid",
+        ".write": "auth != null && $uid == auth.uid && ((!data.exists() && !newData.hasChildren(['role', 'permission'])) || (data.exists() && newData.child('role').val() == data.child('role').val() && newData.child('permission').val() == data.child('permission').val()))"
+      }
+    }
+  }
+}
