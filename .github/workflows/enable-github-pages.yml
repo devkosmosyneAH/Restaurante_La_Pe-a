@@ -19,9 +19,15 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            await github.request('POST /repos/{owner}/{repo}/pages', {
+            const request = {
               owner: context.repo.owner,
               repo: context.repo.repo,
               build_type: 'legacy',
               source: { branch: 'gh-pages', path: '/' },
-            });
+            };
+            try {
+              await github.request('POST /repos/{owner}/{repo}/pages', request);
+            } catch (error) {
+              if (error.status !== 409) throw error;
+              await github.request('PUT /repos/{owner}/{repo}/pages', request);
+            }
