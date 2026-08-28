@@ -216,16 +216,22 @@ class FirebaseAuthService {
       debugPrint('post_login.profile_sync_failed: $error');
     }
 
-    var role = _remoteRoleOrDefault(profile);
-    try {
-      final localRole = await _resolveLocalRole(user).timeout(
-        const Duration(seconds: 3),
-      );
-      if (localRole != null) role = localRole;
-    } catch (error) {
-      issues.add(PostLoginIssue('local_database_failed', error));
-      debugPrint('post_login.local_database_failed: $error');
+    // Firebase es la fuente de verdad para el rol en web. La base local puede
+    // estar vacía en el primer acceso o todavía sincronizándose.
+    final authMetadata = await _readAuthMetadata(user);
+    var role = _roleFromMap(authMetadata) ?? _roleFromMap(profile);
+    if (role == null) {
+      try {
+        final localRole = await _resolveLocalRole(user).timeout(
+          const Duration(seconds: 3),
+        );
+        role = _normalizeRole(localRole);
+      } catch (error) {
+        issues.add(PostLoginIssue('local_database_failed', error));
+        debugPrint('post_login.local_database_failed: $error');
+      }
     }
+    role ??= 'mesero';
 
     final session = <String, dynamic>{
       'id': user.uid,
@@ -259,9 +265,56 @@ class FirebaseAuthService {
     'restaurantId': AppConstants.restaurantId,
   };
 
-  String _remoteRoleOrDefault(Map<String, dynamic>? profile) {
-    final remoteRole = profile?['role']?.toString().trim();
-    return remoteRole == null || remoteRole.isEmpty ? 'mesero' : remoteRole;
+  Future<Map<String, dynamic>?> _readAuthMetadata(User user) async {
+    try {
+      final snapshot = await _database
+          .child('auth')
+          .child(user.uid)
+          .once()
+          .timeout(const Duration(seconds: 3));
+      final value = snapshot.snapshot.value;
+      if (value is Map) {
+        return Map<String, dynamic>.from(value.cast<String, dynamic>());
+      }
+    } catch (error) {
+      debugPrint('post_login.auth_metadata_unavailable: $error');
+    }
+    return null;
+  }
+
+  String? _roleFromMap(Map<String, dynamic>? data) {
+    if (data == null) return null;
+    if (data['admin'] == true) return 'administrador';
+
+    final directRole = _normalizeRole(data['role'] ?? data['rol']);
+    if (directRole != null) return directRole;
+
+    final roles = data['roles'];
+    if (roles is Map) {
+      for (final entry in roles.entries) {
+        if (entry.value == true) {
+          final normalized = _normalizeRole(entry.key);
+          if (normalized != null) return normalized;
+        }
+      }
+    } else if (roles is Iterable) {
+      for (final value in roles) {
+        final normalized = _normalizeRole(value);
+        if (normalized != null) return normalized;
+      }
+    }
+    return null;
+  }
+
+  String? _normalizeRole(Object? rawRole) {
+    final value = rawRole?.toString().trim().toLowerCase();
+    return switch (value) {
+      'administrador' || 'admin' || 'administrator' => 'administrador',
+      'cajero' || 'cashier' => 'cajero',
+      'mesero' || 'mozo' || 'waiter' => 'mesero',
+      'cocina' || 'cocinero' || 'kitchen' => 'cocina',
+      _ => null,
+    };
   }
 
   /// SQLite is explicitly outside the critical authentication path.
