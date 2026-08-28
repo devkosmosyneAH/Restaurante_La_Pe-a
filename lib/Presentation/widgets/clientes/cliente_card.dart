@@ -49,12 +49,16 @@ class ClienteCard extends StatelessWidget {
               children: [
                 Icon(Icons.badge_outlined, size: 13, color: cs.primary),
                 const SizedBox(width: 4),
-                Text(
-                  cliente.cedula,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: cs.primary,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.5,
+                Flexible(
+                  child: Text(
+                    cliente.cedula,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: cs.primary,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.5,
+                    ),
                   ),
                 ),
               ],
@@ -69,10 +73,14 @@ class ClienteCard extends StatelessWidget {
                     color: cs.onSurfaceVariant,
                   ),
                   const SizedBox(width: 4),
-                  Text(
-                    cliente.telefono!,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: cs.onSurfaceVariant,
+                  Flexible(
+                    child: Text(
+                      cliente.telefono!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: cs.onSurfaceVariant,
+                      ),
                     ),
                   ),
                 ],
@@ -108,16 +116,25 @@ class ClienteCard extends StatelessWidget {
             IconButton(
               icon: const Icon(Icons.bar_chart_rounded),
               tooltip: 'Ver historial',
+              visualDensity: VisualDensity.compact,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
               onPressed: onVerResumen,
             ),
             IconButton(
               icon: const Icon(Icons.edit_rounded),
               tooltip: 'Editar',
+              visualDensity: VisualDensity.compact,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
               onPressed: onEdit,
             ),
             IconButton(
               icon: Icon(Icons.delete_outline_rounded, color: cs.error),
               tooltip: 'Eliminar',
+              visualDensity: VisualDensity.compact,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
               onPressed: onDelete,
             ),
           ],

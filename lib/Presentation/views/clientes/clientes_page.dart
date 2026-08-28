@@ -176,45 +176,86 @@ class _Header extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              const Icon(Icons.people_rounded, size: 24),
-              const SizedBox(width: 10),
-              Text(
-                'Clientes',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: cs.primaryContainer,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  '$total',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: cs.onPrimaryContainer,
-                    fontSize: 12,
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final compact = constraints.maxWidth < 460;
+              final heading = Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.people_rounded, size: 24),
+                  const SizedBox(width: 10),
+                  Text(
+                    'Clientes',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
-              ),
-              const Spacer(),
-              IconButton(
-                icon: const Icon(Icons.refresh_rounded),
-                tooltip: 'Actualizar',
-                onPressed: onRefresh,
-              ),
-              const SizedBox(width: 4),
-              FilledButton.icon(
-                onPressed: onNuevo,
-                icon: const Icon(Icons.person_add_rounded, size: 18),
-                label: const Text('Nuevo'),
-              ),
-            ],
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: cs.primaryContainer,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      '$total',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: cs.onPrimaryContainer,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ],
+              );
+
+              if (compact) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(child: heading),
+                        IconButton(
+                          icon: const Icon(Icons.refresh_rounded),
+                          tooltip: 'Actualizar',
+                          onPressed: onRefresh,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.icon(
+                        onPressed: onNuevo,
+                        icon: const Icon(Icons.person_add_rounded, size: 18),
+                        label: const Text('Nuevo cliente'),
+                      ),
+                    ),
+                  ],
+                );
+              }
+
+              return Row(
+                children: [
+                  Expanded(child: heading),
+                  IconButton(
+                    icon: const Icon(Icons.refresh_rounded),
+                    tooltip: 'Actualizar',
+                    onPressed: onRefresh,
+                  ),
+                  const SizedBox(width: 4),
+                  FilledButton.icon(
+                    onPressed: onNuevo,
+                    icon: const Icon(Icons.person_add_rounded, size: 18),
+                    label: const Text('Nuevo'),
+                  ),
+                ],
+              );
+            },
           ),
           const SizedBox(height: 10),
           TextField(

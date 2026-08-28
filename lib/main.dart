@@ -11,7 +11,6 @@ import 'package:restaurant_app/Presentation/config/routes/app_router.dart';
 import 'package:restaurant_app/Presentation/core/di/injection_container.dart';
 import 'package:restaurant_app/Presentation/core/firebase/firebase_initializer.dart';
 import 'package:restaurant_app/Presentation/core/theme/app_theme.dart';
-import 'package:restaurant_app/Presentation/providers/auth/activation_provider.dart';
 import 'package:restaurant_app/Presentation/providers/auth/auth_provider.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -79,7 +78,6 @@ Future<void> _initializeServicesInBackground() async {
       initializePlatformSpecific(),
       initDatabaseSafely(),
       FirebaseAppInitializer.initialize(),
-      sl<ActivationChangeNotifier>().loadStatus(),
     ]);
 
     debugPrint('STARTUP - restaurando sesión');

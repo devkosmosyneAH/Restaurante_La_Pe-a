@@ -66,7 +66,7 @@ Pantallas/widgets → providers (Riverpod/ChangeNotifier)
 | Mesero | Inicio, mesas y pedidos. |
 | Cocina | Únicamente la pantalla de cocina. |
 
-Las rutas públicas —menú, reservas, página del restaurante, cotización y pedido por mesa— no requieren autenticación ni activación de la aplicación. Las demás exigen activación y sesión válida.
+Las rutas públicas —menú, reservas, página del restaurante, cotización y pedido por mesa— no requieren autenticación. Las demás exigen una sesión válida.
 
 ## Rutas públicas
 
@@ -156,26 +156,24 @@ El repositorio incluye pruebas de autenticación/sesión, multi-tenant, menú p�
 
 Revisión realizada el 30 de julio de 2026:
 
-- `flutter analyze` termina con **6 hallazgos**: 1 advertencia por un elemento no usado y 5 informativos.
-- El hallazgo más relevante está en `app_router.dart`: dentro de la redirección se compara una ruta de texto con el notifier de activación, en vez de comparar con la constante de ruta. Esto puede impedir reconocer correctamente la página de activación.
+- `flutter analyze` termina sin hallazgos en la versión actual del proyecto.
 - `flutter test` no pasa completamente: se observaron **74 pruebas ejecutadas y 24 fallos**. Parte de los errores se producen porque las pruebas inicializan pantallas/servicios que acceden a Firebase sin haber inicializado Firebase, o porque el contenedor `GetIt` no tiene registrado `FirebaseAuthService` en la prueba.
 - Otras pruebas del menú público esperan el botón/texto **“Cotizar”** y no lo encuentran; parece haber una diferencia entre la interfaz actual y lo que esperan esos tests. Conviene decidir si se restaura esa acción o se actualizan las pruebas según el comportamiento deseado.
 
 ## Prioridad sugerida para las correcciones
 
-1. Corregir la comparación de la ruta de activación en el router y cubrirla con una prueba de redirección.
-2. Hacer que las pruebas tengan inicialización/mocks consistentes de Firebase y registros completos de `GetIt`.
-3. Resolver la discrepancia del botón/flujo “Cotizar” en el menú público.
-4. Definir la configuración real de Firebase, Drive y SRI fuera de valores por defecto o marcadores de ejemplo.
-5. Corregir los avisos menores de análisis: elemento sin usar, llaves en condicionales y reemplazo futuro de `withOpacity`.
-6. Revisar dependencias: el análisis informó 123 paquetes con versiones nuevas incompatibles con los límites actuales; actualizar por etapas y con pruebas.
+1. Hacer que las pruebas tengan inicialización/mocks consistentes de Firebase y registros completos de `GetIt`.
+2. Resolver la discrepancia del botón/flujo “Cotizar” en el menú público.
+3. Definir la configuración real de Firebase, Drive y SRI fuera de valores por defecto o marcadores de ejemplo.
+4. Corregir los avisos menores de análisis: elemento sin usar, llaves en condicionales y reemplazo futuro de `withOpacity`.
+5. Revisar dependencias: el análisis informó 123 paquetes con versiones nuevas incompatibles con los límites actuales; actualizar por etapas y con pruebas.
 
 ## Archivos clave para futuras modificaciones
 
 | Archivo/directorio | Cuándo revisarlo |
 | --- | --- |
 | `lib/main.dart` | Para cambiar el orden de inicio de servicios. |
-| `lib/Presentation/config/routes/app_router.dart` | Para rutas, login, activación y permisos. |
+| `lib/Presentation/config/routes/app_router.dart` | Para rutas, login y permisos. |
 | `lib/Presentation/core/database/database_tables.dart` | Para tablas y migraciones SQLite. |
 | `lib/Presentation/core/sync/` | Para la cola y reglas de sincronización offline/cloud. |
 | `lib/Presentation/core/tenant/tenant_context.dart` | Para comportamiento multi-restaurante. |

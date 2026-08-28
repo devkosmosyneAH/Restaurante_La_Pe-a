@@ -61,7 +61,6 @@ import 'package:restaurant_app/Presentation/domain/reservaciones/repositories/re
 import 'package:restaurant_app/Presentation/domain/reservaciones/usecases/reserva_usecases.dart';
 import 'package:restaurant_app/Presentation/domain/usuarios/repositories/usuario_repository.dart';
 import 'package:restaurant_app/Presentation/domain/usuarios/usecases/usuario_usecases.dart';
-import 'package:restaurant_app/Presentation/providers/auth/activation_provider.dart';
 import 'package:restaurant_app/Presentation/providers/auth/auth_provider.dart';
 import 'package:restaurant_app/Presentation/services/clientes/cliente_service.dart';
 import 'package:restaurant_app/Presentation/services/clientes/cliente_service_impl.dart';
@@ -96,9 +95,6 @@ Future<void> initDependencies() async {
       dbHelper: sl(),
       tenantContext: sl(),
     ),
-  );
-  sl.registerLazySingleton<ActivationChangeNotifier>(
-    () => ActivationChangeNotifier(),
   );
   sl.registerLazySingleton<AuthChangeNotifier>(() => AuthChangeNotifier());
   sl.registerLazySingleton<SriService>(() => SriServiceImpl());

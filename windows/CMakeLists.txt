@@ -10,6 +10,13 @@ set(BINARY_NAME "codigo_restaurant")
 # versions of CMake.
 cmake_policy(VERSION 3.14...3.25)
 
+# Firebase's Windows C++ SDK (pulled by firebase_core) still declares a
+# historical minimum of CMake 3.1. CMake 4 removes compatibility with versions
+# older than 3.5 unless this policy floor is set by the parent project.
+# Keeping it here makes the build work with current CMake versions without
+# modifying the generated SDK under build/windows.
+set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
+
 # Define build configuration option.
 get_property(IS_MULTICONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
 if(IS_MULTICONFIG)

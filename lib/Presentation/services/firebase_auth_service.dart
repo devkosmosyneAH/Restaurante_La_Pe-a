@@ -82,10 +82,12 @@ class FirebaseAuthService {
     required String password,
   }) async {
     try {
-      final credential = await _firebaseAuth.signInWithEmailAndPassword(
-        email: email.trim(),
-        password: password,
-      );
+      final credential = await _firebaseAuth
+          .signInWithEmailAndPassword(
+            email: email.trim(),
+            password: password,
+          )
+          .timeout(const Duration(seconds: 15));
       final user = credential.user;
       if (user == null) {
         return const FirebaseAuthenticationResult.failure(
@@ -96,6 +98,12 @@ class FirebaseAuthService {
 
       // Authentication ends here. Do not await RTDB, SQLite or browser storage.
       return FirebaseAuthenticationResult.success(user);
+    } on TimeoutException {
+      return const FirebaseAuthenticationResult.failure(
+        code: 'authentication_timeout',
+        message:
+            'La autenticación está tardando demasiado. Comprueba tu conexión e inténtalo de nuevo.',
+      );
     } on FirebaseAuthException catch (error) {
       return FirebaseAuthenticationResult.failure(
         code: 'authentication_failed',

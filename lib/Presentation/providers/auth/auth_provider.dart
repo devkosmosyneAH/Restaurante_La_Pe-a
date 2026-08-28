@@ -9,7 +9,6 @@ import 'package:restaurant_app/Presentation/core/firebase/firebase_initializer.d
 import 'package:restaurant_app/Presentation/core/sync/hybrid_sync_orchestrator.dart';
 import 'package:restaurant_app/Presentation/core/tenant/tenant_context.dart';
 import 'package:restaurant_app/Presentation/entities/usuarios/usuario.dart';
-import 'package:restaurant_app/Presentation/providers/auth/activation_provider.dart';
 import 'package:restaurant_app/Presentation/services/firebase_auth_service.dart';
 import 'package:restaurant_app/Presentation/services/session_service.dart';
 
@@ -38,12 +37,6 @@ class AuthChangeNotifier extends ChangeNotifier {
     await sl<HybridSyncOrchestrator>().stop();
   }
 
-  bool _canUseActivatedApp() {
-    if (!sl.isRegistered<ActivationChangeNotifier>()) return true;
-    final activation = sl<ActivationChangeNotifier>();
-    return !activation.isInitialized || activation.canAccessApp;
-  }
-
   Future<void> _audit(
     String eventType, {
     String? userId,
@@ -63,11 +56,6 @@ class AuthChangeNotifier extends ChangeNotifier {
     final generation = ++_sessionGeneration;
     _manualLoginInProgress = true;
     try {
-      if (!_canUseActivatedApp()) {
-        unawaited(_audit('login_blocked_activation'));
-        return sl<ActivationChangeNotifier>().status.message;
-      }
-
       final normalizedEmail = email.trim();
       if (normalizedEmail.isEmpty ||
           !RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(normalizedEmail)) {
@@ -168,12 +156,6 @@ class AuthChangeNotifier extends ChangeNotifier {
   Future<void> restoreSession() async {
     if (_manualLoginInProgress || isAuthenticated) return;
     final generation = _sessionGeneration;
-    if (!_canUseActivatedApp()) {
-      unawaited(_audit('session_forced_logout_activation'));
-      await SessionService.logout();
-      return;
-    }
-
     _setSessionRestoring(true);
     try {
       final persisted = await SessionService.getCurrentUserSession();

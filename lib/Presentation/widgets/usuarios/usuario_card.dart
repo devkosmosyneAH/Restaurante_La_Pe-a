@@ -45,18 +45,22 @@ class UsuarioCard extends StatelessWidget {
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                color: rolColor.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                usuario.rol.label,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  color: rolColor,
+            Flexible(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: rolColor.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  usuario.rol.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: rolColor,
+                  ),
                 ),
               ),
             ),
@@ -107,6 +111,9 @@ class UsuarioCard extends StatelessWidget {
             IconButton(
               icon: const Icon(Icons.edit_rounded),
               tooltip: 'Editar',
+              visualDensity: VisualDensity.compact,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
               onPressed: onEdit,
             ),
             IconButton(
@@ -117,6 +124,9 @@ class UsuarioCard extends StatelessWidget {
               tooltip: canDelete
                   ? 'Eliminar'
                   : 'No se puede eliminar el único administrador',
+              visualDensity: VisualDensity.compact,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
               onPressed: canDelete ? onDelete : null,
             ),
           ],

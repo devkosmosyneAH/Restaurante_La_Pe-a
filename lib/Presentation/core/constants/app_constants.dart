@@ -10,10 +10,6 @@ class AppConstants {
   static const String appFullName = 'La Peña Bar&House';
   static const String appVersion = '1.0.0';
 
-  // ── Activación local (demo / licencia fija) ─────────────────────────────
-  static const String demoActivationCode = 'DEMO-LAPENA-7D';
-  static const String fullActivationCode = 'LAPENA-FULL-2026';
-  static const Duration demoActivationDuration = Duration(days: 7);
 
   // ── Moneda ───────────────────────────────────────────────────────────────
   static const String currencySymbol = '\$';

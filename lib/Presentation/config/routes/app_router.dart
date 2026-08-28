@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:restaurant_app/Presentation/views/auth/activation_page.dart';
 import 'package:restaurant_app/Presentation/views/auth/login_page.dart';
 import 'package:restaurant_app/Presentation/core/di/injection_container.dart';
 import 'package:restaurant_app/Presentation/core/domain/enums.dart';
-import 'package:restaurant_app/Presentation/providers/auth/activation_provider.dart';
 import 'package:restaurant_app/Presentation/providers/auth/auth_provider.dart';
 import 'package:restaurant_app/Presentation/views/home/home_page.dart';
 import 'package:restaurant_app/Presentation/views/mesas/mesas_page.dart';
@@ -41,7 +39,6 @@ class AppRouter {
   static final _shellNavigatorKey = GlobalKey<NavigatorState>();
 
   /// Rutas nombradas para navegación tipada.
-  static const String activation = '/activation';
   static const String login = '/login';
   static const String home = '/';
   static const String mesas = '/mesas';
@@ -137,36 +134,24 @@ class AppRouter {
     initialLocation: home,
     refreshListenable: Listenable.merge([
       sl<AuthChangeNotifier>(),
-      sl<ActivationChangeNotifier>(),
     ]),
     redirect: (context, state) {
       final auth = sl<AuthChangeNotifier>();
-      final activation = sl<ActivationChangeNotifier>();
 
       final isLoggedIn = auth.isAuthenticated;
       debugPrint(
         "ROUTER redirect:"
         " from=${state.matchedLocation}"
         " isAuthenticated=${auth.isAuthenticated}"
-        " isSessionRestoring=${auth.isSessionRestoring}"
-        " canAccessApp=${activation.canAccessApp}"
-        " isInitialized=${activation.isInitialized}"
-        " isLoading=${activation.isLoading}",
+        " isSessionRestoring=${auth.isSessionRestoring}",
       );
       final isLoginRoute = state.matchedLocation == login;
-      final isActivationRoute = state.matchedLocation == AppRouter.activation;
       final loc = state.matchedLocation;
       final isAuthLoading = auth.isSessionRestoring;
 
-      // Las rutas públicas son accesibles siempre, sin importar activación
-      // ni autenticación (clientes externos que escanean QR, por ejemplo).
+      // Las rutas públicas son accesibles siempre, sin autenticación
+      // (clientes externos que escanean QR, por ejemplo).
       if (isPublicLocation(loc)) return null;
-
-      // A partir de aquí la ruta requiere la app activada.
-      if (!activation.canAccessApp && !isActivationRoute) {
-        return AppRouter.activation;
-      }
-      if (!activation.canAccessApp && isActivationRoute) return null;
 
       // Mientras la sesión está en restauración inicial, no forzar redirect.
       // Esto evita perder la ruta solicitada en el refresh cuando el usuario
@@ -187,11 +172,6 @@ class AppRouter {
     },
     routes: [
       // ── Login (fuera del shell) ──────────────────────────────────
-      GoRoute(
-        path: activation,
-        pageBuilder: (context, state) =>
-            const NoTransitionPage(child: ActivationPage()),
-      ),
       GoRoute(
         path: login,
         pageBuilder: (context, state) =>

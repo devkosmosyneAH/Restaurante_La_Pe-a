@@ -391,13 +391,29 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
                                         ? MainAxisAlignment.start
                                         : MainAxisAlignment.center,
                                     children: [
-                                      Icon(
-                                        item.icon,
-                                        color: isSelected
-                                            ? AppColors.primary
-                                            : Colors.black87,
-                                        size: isWideScreen ? 26 : 24,
-                                      ),
+                                      if (!isWideScreen &&
+                                          item.path == AppRouter.pedidos &&
+                                          puedeAprobarPedidos &&
+                                          pendientesCount > 0)
+                                        Badge(
+                                          label: Text('$pendientesCount'),
+                                          backgroundColor: Colors.orange,
+                                          child: Icon(
+                                            item.icon,
+                                            color: isSelected
+                                                ? AppColors.primary
+                                                : Colors.black87,
+                                            size: 24,
+                                          ),
+                                        )
+                                      else
+                                        Icon(
+                                          item.icon,
+                                          color: isSelected
+                                              ? AppColors.primary
+                                              : Colors.black87,
+                                          size: isWideScreen ? 26 : 24,
+                                        ),
                                       if (isWideScreen) ...[
                                         const SizedBox(width: 16),
                                         Expanded(
@@ -417,7 +433,8 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
                                         ),
                                       ],
                                       // Badge para pedidos
-                                      if (item.path == AppRouter.pedidos &&
+                                      if (isWideScreen &&
+                                          item.path == AppRouter.pedidos &&
                                           puedeAprobarPedidos &&
                                           pendientesCount > 0)
                                         Badge(
