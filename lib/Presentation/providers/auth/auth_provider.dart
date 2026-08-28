@@ -160,7 +160,8 @@ class AuthChangeNotifier extends ChangeNotifier {
     try {
       final persisted = await SessionService.getCurrentUserSession();
       if (_manualLoginInProgress || generation != _sessionGeneration) return;
-      final firebaseSession = await sl<FirebaseAuthService>().restoreSessionFromFirebase();
+      final firebaseAuth = sl<FirebaseAuthService>();
+      final firebaseSession = await firebaseAuth.restoreSessionFromFirebase();
       if (_manualLoginInProgress || generation != _sessionGeneration) return;
       if (firebaseSession == null) return;
 
@@ -184,6 +185,14 @@ class AuthChangeNotifier extends ChangeNotifier {
       _startCloudSyncIfAuthenticated();
       unawaited(_audit('session_restored', userId: restored.id));
       if (previous != _usuario) notifyListeners();
+
+      // La sesión persistida puede contener un rol antiguo (por ejemplo,
+      // mesero). Rehidratarla desde Firebase corrige el rol sin exigir que el
+      // usuario borre el almacenamiento del navegador o vuelva a registrarse.
+      final firebaseUser = firebaseAuth.currentUser;
+      if (firebaseUser != null) {
+        unawaited(_hydratePostLogin(firebaseUser, generation));
+      }
     } catch (error, stackTrace) {
       debugPrint('session_restore_failed: $error');
       debugPrintStack(stackTrace: stackTrace);
