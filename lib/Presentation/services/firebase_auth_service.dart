@@ -38,10 +38,16 @@ class PostLoginIssue {
 }
 
 class PostLoginResult {
-  const PostLoginResult({required this.session, required this.issues});
+  const PostLoginResult({
+    required this.session,
+    required this.issues,
+    required this.isAuthorized,
+  });
 
   final Map<String, dynamic> session;
   final List<PostLoginIssue> issues;
+
+  final bool isAuthorized;
 }
 
 /// Service responsible for Firebase credentials. A successful credential is
@@ -171,14 +177,8 @@ class FirebaseAuthService {
             .timeout(const Duration(seconds: 5), onTimeout: () => null);
     if (user == null) return null;
 
-    final persisted = await SessionService.getCurrentUserSession();
-    if (persisted != null && persisted['uid']?.toString() == user.uid) {
-      return persisted;
-    }
-
-    final session = _sessionFromUser(user);
-    unawaited(completePostLogin(user));
-    return session;
+    final hydration = await completePostLogin(user);
+    return hydration.isAuthorized ? hydration.session : null;
   }
 
   /// Returns a usable Firebase-backed session immediately. It never requests
@@ -187,14 +187,8 @@ class FirebaseAuthService {
     final user = currentUser;
     if (user == null) return null;
 
-    final existingSession = await SessionService.getCurrentUserSession();
-    if (existingSession != null && existingSession['uid']?.toString() == user.uid) {
-      return existingSession;
-    }
-
-    final session = _sessionFromUser(user);
-    unawaited(completePostLogin(user));
-    return session;
+    final hydration = await completePostLogin(user);
+    return hydration.isAuthorized ? hydration.session : null;
   }
 
   /// Best-effort profile, role and storage hydration. Errors are returned with
@@ -216,54 +210,45 @@ class FirebaseAuthService {
       debugPrint('post_login.profile_sync_failed: $error');
     }
 
-    // Firebase es la fuente de verdad para el rol en web. La base local puede
-    // estar vacía en el primer acceso o todavía sincronizándose.
+    // Firebase is the source of truth for access. SQLite must never decide
+    // which role is shown after a sign-in.
     final authMetadata = await _readAuthMetadata(user);
-    var role = _roleFromMap(authMetadata) ?? _roleFromMap(profile);
-    if (role == null) {
-      try {
-        final localRole = await _resolveLocalRole(user).timeout(
-          const Duration(seconds: 3),
-        );
-        role = _normalizeRole(localRole);
-      } catch (error) {
-        issues.add(PostLoginIssue('local_database_failed', error));
-        debugPrint('post_login.local_database_failed: $error');
-      }
-    }
-    role ??= 'mesero';
+    final role = roleFromMetadata(authMetadata) ?? roleFromMetadata(profile);
+    final isAuthorized =
+        role != null &&
+        profile?['uid']?.toString() == user.uid &&
+        profile?['restaurantId']?.toString() == AppConstants.restaurantId;
 
     final session = <String, dynamic>{
       'id': user.uid,
       'uid': user.uid,
       'email': user.email,
       'name': user.displayName ?? profile?['name'] ?? 'Usuario',
-      'role': role,
+      // A caller must check [isAuthorized] before using the fallback role.
+      'role': role ?? 'mesero',
       'permission': profile?['permission'] ?? 'operador',
       'restaurantId': AppConstants.restaurantId,
     };
     // Do not let a delayed hydration from a signed-out or replaced user write
     // a stale browser session.
     if (currentUser?.uid != user.uid) {
-      return PostLoginResult(session: session, issues: issues);
+      return PostLoginResult(
+        session: session,
+        issues: issues,
+        isAuthorized: isAuthorized,
+      );
     }
     final persisted = await SessionService.saveUserSessionDetailed(session);
     if (!persisted.success) {
       issues.add(PostLoginIssue('session_storage_failed', persisted.error!));
       debugPrint('post_login.session_storage_failed: ${persisted.error}');
     }
-    return PostLoginResult(session: session, issues: issues);
+    return PostLoginResult(
+      session: session,
+      issues: issues,
+      isAuthorized: isAuthorized,
+    );
   }
-
-  Map<String, dynamic> _sessionFromUser(User user) => <String, dynamic>{
-    'id': user.uid,
-    'uid': user.uid,
-    'email': user.email,
-    'name': user.displayName ?? 'Usuario',
-    'role': 'mesero',
-    'permission': 'operador',
-    'restaurantId': AppConstants.restaurantId,
-  };
 
   Future<Map<String, dynamic>?> _readAuthMetadata(User user) async {
     try {
@@ -282,7 +267,9 @@ class FirebaseAuthService {
     return null;
   }
 
-  String? _roleFromMap(Map<String, dynamic>? data) {
+  /// Handles the role formats used by both current and legacy RTDB profiles.
+  @visibleForTesting
+  static String? roleFromMetadata(Map<String, dynamic>? data) {
     if (data == null) return null;
     if (data['admin'] == true) return 'administrador';
 
@@ -290,6 +277,9 @@ class FirebaseAuthService {
     if (directRole != null) return directRole;
 
     final roles = data['roles'];
+    if (roles is String) {
+      return _normalizeRole(roles);
+    }
     if (roles is Map) {
       for (final entry in roles.entries) {
         if (entry.value == true) {
@@ -306,7 +296,7 @@ class FirebaseAuthService {
     return null;
   }
 
-  String? _normalizeRole(Object? rawRole) {
+  static String? _normalizeRole(Object? rawRole) {
     final value = rawRole?.toString().trim().toLowerCase();
     return switch (value) {
       'administrador' || 'admin' || 'administrator' => 'administrador',

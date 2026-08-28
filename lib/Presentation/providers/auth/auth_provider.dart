@@ -86,8 +86,26 @@ class AuthChangeNotifier extends ChangeNotifier {
       }
 
       final user = result.user!;
+      // The router listens to this notifier. Publishing a Firebase user before
+      // its role is resolved made every account enter as the mesero default.
+      final hydration = await firebase.completePostLogin(user);
+      for (final issue in hydration.issues) {
+        unawaited(
+          _audit(
+            issue.code,
+            userId: user.uid,
+            detail: {'error': issue.error.toString()},
+          ),
+        );
+      }
+      if (!hydration.isAuthorized) {
+        unawaited(_audit('authorization_profile_missing', userId: user.uid));
+        await firebase.signOut();
+        return 'Esta cuenta no tiene un rol autorizado para La Peña.';
+      }
+
       final previous = _usuario;
-      _usuario = _fromFirebaseUser(user);
+      _usuario = _fromSessionMap(hydration.session);
       _setTenant(_usuario!);
       _startCloudSyncIfAuthenticated();
       unawaited(SessionService.clearLoginSecurityState());
@@ -101,8 +119,6 @@ class AuthChangeNotifier extends ChangeNotifier {
       );
       if (previous != _usuario) notifyListeners();
 
-      // This starts only after authentication has been published to the UI.
-      unawaited(_hydratePostLogin(user, generation));
       return null;
     } catch (error, stackTrace) {
       debugPrint('authentication_failed: $error');
@@ -185,14 +201,6 @@ class AuthChangeNotifier extends ChangeNotifier {
       _startCloudSyncIfAuthenticated();
       unawaited(_audit('session_restored', userId: restored.id));
       if (previous != _usuario) notifyListeners();
-
-      // La sesión persistida puede contener un rol antiguo (por ejemplo,
-      // mesero). Rehidratarla desde Firebase corrige el rol sin exigir que el
-      // usuario borre el almacenamiento del navegador o vuelva a registrarse.
-      final firebaseUser = firebaseAuth.currentUser;
-      if (firebaseUser != null) {
-        unawaited(_hydratePostLogin(firebaseUser, generation));
-      }
     } catch (error, stackTrace) {
       debugPrint('session_restore_failed: $error');
       debugPrintStack(stackTrace: stackTrace);
