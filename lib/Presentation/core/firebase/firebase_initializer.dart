@@ -8,12 +8,82 @@ class FirebaseAppInitializer {
 
   static Future<void>? _initialization;
 
-  static String _requireEnv(String key) {
-    final value = dotenv.env[key]?.trim();
-    if (value == null || value.isEmpty) {
-      throw StateError('Falta la variable de entorno Firebase: $key');
+  static String? _readEnv(String key) {
+    try {
+      return dotenv.env[key]?.trim();
+    } on Object catch (error) {
+      debugPrint('Firebase env unavailable before dotenv init for $key: $error');
+      return null;
     }
-    return value;
+  }
+
+  static bool _hasRequiredEnvForCurrentPlatform() {
+    final required = <String>{
+      'FIREBASE_API_KEY',
+      'FIREBASE_MESSAGING_SENDER_ID',
+      'FIREBASE_PROJECT_ID',
+      'FIREBASE_AUTH_DOMAIN',
+      'FIREBASE_DATABASE_URL',
+      'FIREBASE_STORAGE_BUCKET',
+    };
+
+    if (kIsWeb) {
+      required.addAll({
+        'FIREBASE_WEB_APP_ID',
+      });
+    } else if (defaultTargetPlatform == TargetPlatform.iOS) {
+      required.add('FIREBASE_IOS_APP_ID');
+    } else if (defaultTargetPlatform == TargetPlatform.android) {
+      required.add('FIREBASE_ANDROID_APP_ID');
+    }
+
+    for (final key in required) {
+      final value = _readEnv(key);
+      if (value == null || value.isEmpty) {
+        debugPrint('Firebase config missing: $key');
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  static FirebaseOptions? buildOptionsForCurrentPlatform() {
+    if (!_hasRequiredEnvForCurrentPlatform()) {
+      return null;
+    }
+
+    if (kIsWeb) {
+      return FirebaseOptions(
+        apiKey: _readEnv('FIREBASE_API_KEY')!,
+        appId: _readEnv('FIREBASE_WEB_APP_ID')!,
+        messagingSenderId: _readEnv('FIREBASE_MESSAGING_SENDER_ID')!,
+        projectId: _readEnv('FIREBASE_PROJECT_ID')!,
+        authDomain: _readEnv('FIREBASE_AUTH_DOMAIN')!,
+        databaseURL: _readEnv('FIREBASE_DATABASE_URL')!,
+        storageBucket: _readEnv('FIREBASE_STORAGE_BUCKET')!,
+      );
+    }
+
+    if (defaultTargetPlatform != TargetPlatform.android &&
+        defaultTargetPlatform != TargetPlatform.iOS) {
+      debugPrint(
+        'Firebase initialization skipped for unsupported platform: $defaultTargetPlatform',
+      );
+      return null;
+    }
+
+    return FirebaseOptions(
+      apiKey: _readEnv('FIREBASE_API_KEY')!,
+      appId: defaultTargetPlatform == TargetPlatform.iOS
+          ? _readEnv('FIREBASE_IOS_APP_ID')!
+          : _readEnv('FIREBASE_ANDROID_APP_ID')!,
+      messagingSenderId: _readEnv('FIREBASE_MESSAGING_SENDER_ID')!,
+      projectId: _readEnv('FIREBASE_PROJECT_ID')!,
+      authDomain: _readEnv('FIREBASE_AUTH_DOMAIN')!,
+      databaseURL: _readEnv('FIREBASE_DATABASE_URL')!,
+      storageBucket: _readEnv('FIREBASE_STORAGE_BUCKET')!,
+    );
   }
 
   static Future<void> initialize() {
@@ -37,17 +107,15 @@ class FirebaseAppInitializer {
   }
 
   static Future<void> _initialize() async {
-    if (kIsWeb) {
-      final options = FirebaseOptions(
-        apiKey: _requireEnv('FIREBASE_API_KEY'),
-        appId: _requireEnv('FIREBASE_WEB_APP_ID'),
-        messagingSenderId: _requireEnv('FIREBASE_MESSAGING_SENDER_ID'),
-        projectId: _requireEnv('FIREBASE_PROJECT_ID'),
-        authDomain: _requireEnv('FIREBASE_AUTH_DOMAIN'),
-        databaseURL: _requireEnv('FIREBASE_DATABASE_URL'),
-        storageBucket: _requireEnv('FIREBASE_STORAGE_BUCKET'),
+    final options = buildOptionsForCurrentPlatform();
+    if (options == null) {
+      debugPrint(
+        'Firebase initialization skipped because required environment variables are missing.',
       );
+      return;
+    }
 
+    if (kIsWeb) {
       await Firebase.initializeApp(options: options);
 
       // Safari can reject persistent browser storage while Firebase Auth itself
@@ -62,26 +130,6 @@ class FirebaseAppInitializer {
       }
       return;
     }
-
-    if (defaultTargetPlatform != TargetPlatform.android &&
-        defaultTargetPlatform != TargetPlatform.iOS) {
-      debugPrint(
-        'Firebase initialization skipped for unsupported platform: $defaultTargetPlatform',
-      );
-      return;
-    }
-
-    final options = FirebaseOptions(
-      apiKey: _requireEnv('FIREBASE_API_KEY'),
-      appId: defaultTargetPlatform == TargetPlatform.iOS
-          ? _requireEnv('FIREBASE_IOS_APP_ID')
-          : _requireEnv('FIREBASE_ANDROID_APP_ID'),
-      messagingSenderId: _requireEnv('FIREBASE_MESSAGING_SENDER_ID'),
-      projectId: _requireEnv('FIREBASE_PROJECT_ID'),
-      authDomain: _requireEnv('FIREBASE_AUTH_DOMAIN'),
-      databaseURL: _requireEnv('FIREBASE_DATABASE_URL'),
-      storageBucket: _requireEnv('FIREBASE_STORAGE_BUCKET'),
-    );
 
     await Firebase.initializeApp(options: options);
   }
