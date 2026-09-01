@@ -100,7 +100,7 @@ class RestaurantApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      title: 'La Peña • Sistema de Gestión',
+      title: 'La Peña',
 
       debugShowCheckedModeBanner: false,
 
