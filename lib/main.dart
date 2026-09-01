@@ -63,10 +63,10 @@ Future<void> main() async {
         debugPrint('STEP 1 - initializeDesktopWindow');
         await initializeDesktopWindow();
 
-        // La registración es síncrona en la práctica y debe ocurrir antes de
-        // construir el router, pero no debe retrasar el primer frame.
+        // La inyección de dependencias debe estar lista antes de que el router
+        // y los providers intenten usar la sesión autenticada.
         debugPrint('STEP 2 - initDependencies');
-        unawaited(initDependencies());
+        await initDependencies();
 
         runApp(const ProviderScope(child: RestaurantApp()));
 

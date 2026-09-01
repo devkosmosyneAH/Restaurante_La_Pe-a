@@ -229,9 +229,11 @@ class FirebaseAuthService {
       'permission': profile?['permission'] ?? 'operador',
       'restaurantId': AppConstants.restaurantId,
     };
-    // Do not let a delayed hydration from a signed-out or replaced user write
-    // a stale browser session.
-    if (currentUser?.uid != user.uid) {
+    // La sesión se persiste para el usuario recién autenticado. En algunas
+    // plataformas el estado de Firebase puede llegar con retraso; no debemos
+    // cancelar el guardado solo porque currentUser no esté sincronizado aún.
+    final isCurrentAuthUser = currentUser == null || currentUser!.uid == user.uid;
+    if (!isCurrentAuthUser) {
       return PostLoginResult(
         session: session,
         issues: issues,
