@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -19,6 +20,7 @@ Future<void> main() async {
   return runZonedGuarded(
     () async {
       WidgetsFlutterBinding.ensureInitialized();
+      await dotenv.load(fileName: '.env');
 
       FlutterError.onError = (FlutterErrorDetails details) {
         FlutterError.dumpErrorToConsole(details);

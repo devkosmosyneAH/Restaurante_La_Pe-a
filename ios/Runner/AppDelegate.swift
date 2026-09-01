@@ -1,6 +1,5 @@
 import Flutter
 import UIKit
-import FirebaseCore
 
 @main
 @objc class AppDelegate: FlutterAppDelegate {
@@ -8,8 +7,6 @@ import FirebaseCore
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
-    // Inicializar Firebase
-    FirebaseApp.configure()
 
     GeneratedPluginRegistrant.register(with: self)
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
