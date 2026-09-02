@@ -229,7 +229,7 @@ class _LoginPageState extends State<LoginPage>
                                           CrossAxisAlignment.start,
                                       children: [
                                         const Text(
-                                          'Bienvenido de nuevo',
+                                          'Bienvenido prueba 1',
                                           style: TextStyle(
                                             color: AppColors.textPrimary,
                                             fontSize: 21,
