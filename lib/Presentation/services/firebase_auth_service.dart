@@ -120,7 +120,7 @@ class FirebaseAuthService {
       debugPrint('stackTrace = $stackTrace');
       debugPrint('====================================');
       return FirebaseAuthenticationResult.failure(
-        code: 'authentication_failed',
+        code: error.code,
         message: _mapAuthError(error.code),
       );
     } catch (error) {
@@ -371,9 +371,12 @@ class FirebaseAuthService {
   static String _mapAuthError(String code) {
     return switch (code) {
       'invalid-email' => 'Las credenciales ingresadas no son validas.',
+      'invalid-credential' => 'El correo o la contraseña son incorrectos.',
       'user-disabled' => 'No fue posible iniciar sesion con esas credenciales.',
       'user-not-found' => 'Las credenciales ingresadas no son validas.',
       'wrong-password' => 'Las credenciales ingresadas no son validas.',
+      'too-many-requests' =>
+        'Demasiados intentos. Espera unos minutos e intentalo de nuevo.',
       'email-already-in-use' => 'No fue posible completar el registro.',
       'weak-password' => 'La contrasena no cumple los requisitos de seguridad.',
       'operation-not-allowed' =>

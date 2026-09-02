@@ -116,19 +116,34 @@ class AuthChangeNotifier extends ChangeNotifier {
           email: normalizedEmail,
           password: password,
         ),
+        successStatus: 'COMPLETADO',
       );
       if (!result.isAuthenticated) {
+        final failureCode = result.failureCode;
         diagnostic.line(
-          'Resultado Firebase: FALLÓ (${result.failureCode}: ${result.message})',
+          'Resultado Firebase: FALLÓ ($failureCode: ${result.message})',
         );
-        final attempts = await SessionService.registerFailedLoginAttempt();
-        unawaited(_audit('authentication_failed'));
-        if (attempts >= 5) {
-          return _diagnosticFailure(
-            diagnostic,
-            'Demasiados intentos. Espera unos minutos e intentalo de nuevo.',
+        final isCredentialFailure =
+            failureCode == 'invalid-credential' ||
+            failureCode == 'wrong-password' ||
+            failureCode == 'user-not-found';
+
+        if (isCredentialFailure) {
+          final attempts = await SessionService.registerFailedLoginAttempt();
+          unawaited(
+            _audit(
+              'authentication_failed',
+              detail: {'firebaseCode': failureCode},
+            ),
           );
+          if (attempts >= 5) {
+            return _diagnosticFailure(
+              diagnostic,
+              'Demasiados intentos. Espera unos minutos e intentalo de nuevo.',
+            );
+          }
         }
+
         return _diagnosticFailure(
           diagnostic,
           result.message ?? 'No fue posible autenticar las credenciales.',
@@ -136,6 +151,9 @@ class AuthChangeNotifier extends ChangeNotifier {
       }
 
       final user = result.user!;
+      diagnostic.line(
+        'FirebaseAuth.signInWithEmailAndPassword(): AUTHENTICATED',
+      );
       diagnostic.line('Usuario obtenido: OK uid=${user.uid}');
       // The router listens to this notifier. Publishing a Firebase user before
       // its role is resolved made every account enter as the mesero default.

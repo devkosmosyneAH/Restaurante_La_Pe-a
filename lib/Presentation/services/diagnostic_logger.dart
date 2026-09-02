@@ -17,12 +17,16 @@ class DiagnosticLogger {
   }
 
   // TODO: DEBUG TEMPORAL - remover después de diagnosticar
-  Future<T> measure<T>(String name, Future<T> Function() operation) async {
+  Future<T> measure<T>(
+    String name,
+    Future<T> Function() operation, {
+    String successStatus = 'OK',
+  }) async {
     final started = DateTime.now();
     line('[${started.toIso8601String()}] $name: INICIADO');
     try {
       final result = await operation();
-      _recordResult(name, started, 'OK');
+      _recordResult(name, started, successStatus);
       return result;
     } on TimeoutException catch (error, stackTrace) {
       _recordResult(name, started, 'TIMEOUT', error, stackTrace);
