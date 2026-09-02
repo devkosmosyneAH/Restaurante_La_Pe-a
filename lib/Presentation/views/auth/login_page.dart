@@ -76,7 +76,10 @@ class _LoginPageState extends State<LoginPage>
       debugPrint('login_page.authentication_failed: $error');
       debugPrintStack(stackTrace: stackTrace);
       if (mounted) {
-        setState(() => _errorText = 'No fue posible iniciar sesion. Intentalo de nuevo.');
+        setState(
+          () =>
+              _errorText = 'No fue posible iniciar sesion. Intentalo de nuevo.',
+        );
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -201,6 +204,35 @@ class _LoginPageState extends State<LoginPage>
                                         color: AppColors.textSecondary,
                                         fontWeight: FontWeight.w500,
                                       ),
+                                ),
+                                const SizedBox(height: 12),
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                    vertical: 10,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary.withValues(
+                                      alpha: 0.1,
+                                    ),
+                                    border: Border.all(
+                                      color: AppColors.primary.withValues(
+                                        alpha: 0.3,
+                                      ),
+                                    ),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: const Text(
+                                    'PRUEBA 1 · CAMBIOS ACTUALIZADOS',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      color: AppColors.primary,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
                                 ),
                                 const SizedBox(height: 24),
                                 Container(

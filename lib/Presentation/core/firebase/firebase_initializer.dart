@@ -8,6 +8,20 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 class FirebaseAppInitializer {
   const FirebaseAppInitializer._();
 
+  // Configuración pública del cliente web de Firebase para La Peña.
+  // Los dart-define o el archivo de entorno tienen prioridad sobre estos
+  // valores para permitir cambiar de proyecto sin modificar el código.
+  static const Map<String, String> _webDefaults = {
+    'FIREBASE_API_KEY': 'AIzaSyCyMYO7DLe4WlJeGeBkOJqjV5uHXHClFHQ',
+    'FIREBASE_WEB_APP_ID': '1:1062396228506:web:9ae562109a517ed7a38023',
+    'FIREBASE_MESSAGING_SENDER_ID': '1062396228506',
+    'FIREBASE_PROJECT_ID': 'restaura-a1e34',
+    'FIREBASE_AUTH_DOMAIN': 'restaura-a1e34.firebaseapp.com',
+    'FIREBASE_DATABASE_URL':
+        'https://restaura-a1e34-default-rtdb.firebaseio.com',
+    'FIREBASE_STORAGE_BUCKET': 'restaura-a1e34.firebasestorage.app',
+  };
+
   static Future<void>? _initialization;
 
   // TODO: DEBUG TEMPORAL - remover después de diagnosticar
@@ -15,7 +29,10 @@ class FirebaseAppInitializer {
 
   static String? _readEnv(String key) {
     try {
-      return dotenv.env[key]?.trim();
+      final configured = dotenv.env[key]?.trim();
+      if (configured != null && configured.isNotEmpty) return configured;
+      if (kIsWeb) return _webDefaults[key];
+      return configured;
     } on Object catch (error) {
       debugPrint(
         'Firebase env unavailable before dotenv init for $key: $error',
@@ -92,13 +109,15 @@ class FirebaseAppInitializer {
   }
 
   static Future<void> initialize() {
+    // El futuro en curso tiene prioridad: Firebase.apps puede dejar de estar
+    // vacío antes de que termine la configuración posterior de Auth.
+    if (_initialization != null) {
+      return _initialization!;
+    }
+
     if (Firebase.apps.isNotEmpty) {
       debugPrint('Firebase already initialized; skipping duplicate init.');
       return Future.value();
-    }
-
-    if (_initialization != null) {
-      return _initialization!;
     }
 
     final current = _initialize();
@@ -114,10 +133,26 @@ class FirebaseAppInitializer {
   static Future<void> _initialize() async {
     final options = buildOptionsForCurrentPlatform();
     if (options == null) {
+      if (!kIsWeb &&
+          (defaultTargetPlatform == TargetPlatform.android ||
+              defaultTargetPlatform == TargetPlatform.iOS)) {
+        // Firebase toma la configuración nativa de google-services.json o
+        // GoogleService-Info.plist cuando no existe un archivo de entorno.
+        await Firebase.initializeApp();
+        if (Firebase.apps.isEmpty) {
+          throw StateError(
+            'Firebase.initializeApp() termino sin crear la app [DEFAULT].',
+          );
+        }
+        return;
+      }
       debugPrint(
         'Firebase initialization skipped because required environment variables are missing.',
       );
-      return;
+      throw StateError(
+        'Firebase no se inicializo: faltan variables de configuracion para '
+        'la plataforma actual.',
+      );
     }
 
     if (kIsWeb) {
@@ -140,9 +175,19 @@ class FirebaseAppInitializer {
             '${DateTime.now().toIso8601String()} $status ${error.runtimeType}: $error';
         debugPrint('firebase_auth.persistence_unavailable: $error');
       }
+      if (Firebase.apps.isEmpty) {
+        throw StateError(
+          'Firebase.initializeApp() termino sin crear la app [DEFAULT].',
+        );
+      }
       return;
     }
 
     await Firebase.initializeApp(options: options);
+    if (Firebase.apps.isEmpty) {
+      throw StateError(
+        'Firebase.initializeApp() termino sin crear la app [DEFAULT].',
+      );
+    }
   }
 }

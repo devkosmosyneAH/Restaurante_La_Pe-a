@@ -10,7 +10,6 @@ class AppConstants {
   static const String appFullName = 'La Peña Bar&House';
   static const String appVersion = '1.0.0';
 
-
   // ── Moneda ───────────────────────────────────────────────────────────────
   static const String currencySymbol = '\$';
   static const String currencyCode = 'USD';
