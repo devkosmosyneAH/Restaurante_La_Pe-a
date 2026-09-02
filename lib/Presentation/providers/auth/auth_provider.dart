@@ -215,7 +215,7 @@ class AuthChangeNotifier extends ChangeNotifier {
     }
   }
 
-  // TODO: DEBUG TEMPORAL - remover después de diagnosticar
+  // TO DO: DEBUG TEMPORAL - remover después de diagnosticar
   Future<void> _captureLoginContext(DiagnosticLogger diagnostic) async {
     try {
       final web = await readWebStorageDiagnostics();
@@ -290,7 +290,7 @@ class AuthChangeNotifier extends ChangeNotifier {
     }
   }
 
-  // TODO: DEBUG TEMPORAL - remover después de diagnosticar
+  // TO     DO: DEBUG TEMPORAL - remover después de diagnosticar
   String _diagnosticFailure(
     DiagnosticLogger diagnostic,
     String fallbackMessage,
@@ -345,20 +345,20 @@ class AuthChangeNotifier extends ChangeNotifier {
   Future<void> restoreSession() async {
     if (_manualLoginInProgress || isAuthenticated) return;
     final generation = _sessionGeneration;
-    // TODO: DEBUG TEMPORAL - remover después de diagnosticar
+    // TO DO: DEBUG TEMPORAL - remover después de diagnosticar
     debugPrint(
       '[${DateTime.now().toIso8601String()}] ROL - valor inicial/default: '
       '${_usuario?.rol.value ?? 'NULL (sin rol confirmado)'}',
     );
     _setSessionRestoring(true);
     try {
-      // TODO: DEBUG TEMPORAL - remover después de diagnosticar
+      // TO DO: DEBUG TEMPORAL - remover después de diagnosticar
       debugPrint(
         '[${DateTime.now().toIso8601String()}] ROL - consultando fuente real: '
         'SharedPreferences/Firebase',
       );
       final persisted = await SessionService.getCurrentUserSession();
-      // TODO: DEBUG TEMPORAL - remover después de diagnosticar
+      // TO DO: DEBUG TEMPORAL - remover después de diagnosticar
       debugPrint(
         '[${DateTime.now().toIso8601String()}] ROL - caché local: '
         '${persisted?['rol'] ?? persisted?['role'] ?? 'NO DISPONIBLE'}',
@@ -366,7 +366,7 @@ class AuthChangeNotifier extends ChangeNotifier {
       if (_manualLoginInProgress || generation != _sessionGeneration) return;
       final firebaseAuth = sl<FirebaseAuthService>();
       final firebaseSession = await firebaseAuth.restoreSessionFromFirebase();
-      // TODO: DEBUG TEMPORAL - remover después de diagnosticar
+      // TO DO: DEBUG TEMPORAL - remover después de diagnosticar
       debugPrint(
         '[${DateTime.now().toIso8601String()}] ROL - obtenido de Firebase: '
         '${firebaseSession?['rol'] ?? firebaseSession?['role'] ?? 'NO DISPONIBLE'}',
@@ -385,7 +385,7 @@ class AuthChangeNotifier extends ChangeNotifier {
       }
 
       final restored = _fromSessionMap(firebaseSession);
-      // TODO: DEBUG TEMPORAL - remover después de diagnosticar
+      // TO DO: DEBUG TEMPORAL - remover después de diagnosticar
       debugPrint(
         '[${DateTime.now().toIso8601String()}] ROL - actualizado en UI: '
         '${restored.rol.value}',

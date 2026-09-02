@@ -1,6 +1,6 @@
 import 'dart:async';
 
-// TODO: DEBUG TEMPORAL - remover después de diagnosticar
+// TO DO: DEBUG TEMPORAL - remover después de diagnosticar
 class DiagnosticLogger {
   DiagnosticLogger({DateTime? startedAt})
     : startedAt = startedAt ?? DateTime.now();
@@ -16,7 +16,7 @@ class DiagnosticLogger {
     _lines.add(message);
   }
 
-  // TODO: DEBUG TEMPORAL - remover después de diagnosticar
+  // TO DO: DEBUG TEMPORAL - remover después de diagnosticar
   Future<T> measure<T>(
     String name,
     Future<T> Function() operation, {
@@ -37,7 +37,7 @@ class DiagnosticLogger {
     }
   }
 
-  // TODO: DEBUG TEMPORAL - remover después de diagnosticar
+  // TO DO: DEBUG TEMPORAL - remover después de diagnosticar
   void result(
     String name,
     DateTime started,
@@ -48,7 +48,7 @@ class DiagnosticLogger {
     _recordResult(name, started, status, error, stackTrace);
   }
 
-  // TODO: DEBUG TEMPORAL - remover después de diagnosticar
+  // TO DO: DEBUG TEMPORAL - remover después de diagnosticar
   void _recordResult(
     String name,
     DateTime started,

@@ -2,7 +2,7 @@ import 'dart:html' as html;
 
 import 'web_storage_diagnostics.dart';
 
-// TODO: DEBUG TEMPORAL - remover después de diagnosticar
+// TO DO: DEBUG TEMPORAL - remover después de diagnosticar
 Future<WebStorageDiagnostics> readPlatformWebStorageDiagnostics() async {
   var localStorage = 'NO';
   var privateMode = 'NO-DETERMINADO';

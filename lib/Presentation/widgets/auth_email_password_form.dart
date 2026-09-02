@@ -50,7 +50,7 @@ class AuthEmailPasswordForm extends StatelessWidget {
         ),
         if (errorText != null) ...[
           const SizedBox(height: 12),
-          // TODO: DEBUG TEMPORAL - remover después de diagnosticar
+          // TO DO: DEBUG TEMPORAL - remover después de diagnosticar
           Container(
             constraints: const BoxConstraints(maxHeight: 260),
             padding: const EdgeInsets.all(10),
