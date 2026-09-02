@@ -92,10 +92,27 @@ class _HomePageState extends ConsumerState<HomePage> {
       decimalDigits: 2,
     );
     final width = MediaQuery.sizeOf(context).width;
+    final isMobile = width < 640;
     final horizontalPadding = width < 600 ? 16.0 : 24.0;
 
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: const Color(0xFF0B6C78),
+        foregroundColor: Colors.white,
+        elevation: 0,
+        leading: isMobile
+            ? Builder(
+                builder: (context) => IconButton(
+                  icon: const Icon(Icons.menu_rounded),
+                  tooltip: 'Menú',
+                  onPressed: () {
+                    context
+                        .findRootAncestorStateOfType<ScaffoldState>()
+                        ?.openDrawer();
+                  },
+                ),
+              )
+            : null,
         title: const Text('Dashboard'),
         actions: [
           IconButton(

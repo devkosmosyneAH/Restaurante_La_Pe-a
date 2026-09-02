@@ -7,6 +7,7 @@ import 'package:restaurant_app/Presentation/config/routes/app_router.dart';
 import 'package:restaurant_app/Presentation/core/di/injection_container.dart';
 import 'package:restaurant_app/Presentation/core/domain/enums.dart';
 import 'package:restaurant_app/Presentation/core/theme/app_colors.dart';
+import 'package:restaurant_app/Presentation/entities/usuarios/usuario.dart';
 import 'package:restaurant_app/Presentation/providers/auth/auth_provider.dart';
 import 'package:restaurant_app/Presentation/providers/pedidos/pedidos_provider.dart';
 import 'package:restaurant_app/Presentation/widgets/pedidos/aprobar_pedidos_sheet.dart';
@@ -162,7 +163,8 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
     final smallHeight = MediaQuery.of(context).size.height < 700;
 
     if (isMobile) {
-      // ... (mantengo tu navegación móvil sin cambios)
+      final useDrawerNavigation = rol == RolUsuario.mesero;
+
       final quickNavItems = navItems.take(4).toList();
       final showMoreMenu = navItems.length > quickNavItems.length;
       final quickSelectedIndex = quickNavItems.indexWhere(
@@ -173,6 +175,15 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
           : (showMoreMenu ? quickNavItems.length : 0);
 
       return Scaffold(
+        drawer: useDrawerNavigation
+            ? _buildNavigationDrawer(
+                context,
+                auth,
+                usuario,
+                navItems,
+                currentPath,
+              )
+            : null,
         body: SafeArea(child: widget.child),
         bottomNavigationBar: SafeArea(
           top: false,
@@ -494,6 +505,148 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
 
             const VerticalDivider(thickness: 1, width: 1),
             Expanded(child: widget.child),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Drawer _buildNavigationDrawer(
+    BuildContext context,
+    AuthChangeNotifier auth,
+    Usuario usuario,
+    List<_NavItem> navItems,
+    String currentPath,
+  ) {
+    return Drawer(
+      child: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+              child: Column(
+                children: [
+                  Container(
+                    width: 84,
+                    height: 84,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: AppColors.primary.withValues(alpha: 0.18),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.06),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.asset(
+                        'assets/images/logo_la_pena.jpg',
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => const Icon(
+                          Icons.restaurant_rounded,
+                          color: AppColors.primary,
+                          size: 40,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'La Peña',
+                    style: TextStyle(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                    ),
+                  ),
+                  Text(
+                    'Bar & House',
+                    style: TextStyle(
+                      color: AppColors.secondary,
+                      fontWeight: FontWeight.w500,
+                      fontSize: 12,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    usuario.nombre,
+                    style: const TextStyle(
+                      color: Colors.black87,
+                      fontWeight: FontWeight.w500,
+                      fontSize: 13,
+                    ),
+                    textAlign: TextAlign.center,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Text(
+                    usuario.rol.label,
+                    style: TextStyle(color: AppColors.secondary, fontSize: 12),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                children: [
+                  for (final item in navItems)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      child: ListTile(
+                        leading: Icon(
+                          item.icon,
+                          color: _matchesPath(currentPath, item.path)
+                              ? AppColors.primary
+                              : Colors.black87,
+                        ),
+                        title: Text(
+                          item.label,
+                          style: TextStyle(
+                            color: _matchesPath(currentPath, item.path)
+                                ? AppColors.primary
+                                : Colors.black87,
+                            fontWeight: _matchesPath(currentPath, item.path)
+                                ? FontWeight.w600
+                                : FontWeight.w500,
+                            fontSize: 15,
+                          ),
+                        ),
+                        selected: _matchesPath(currentPath, item.path),
+                        selectedTileColor: AppColors.primary.withValues(
+                          alpha: 0.12,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        onTap: () {
+                          Navigator.of(context).pop();
+                          context.go(item.path);
+                        },
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: IconButton(
+                icon: const Icon(Icons.logout_rounded),
+                tooltip: 'Cerrar sesión',
+                color: AppColors.secondary,
+                onPressed: () async => await auth.logout(),
+              ),
+            ),
           ],
         ),
       ),
