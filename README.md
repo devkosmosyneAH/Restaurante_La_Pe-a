@@ -4,6 +4,13 @@ Aplicación Flutter para administrar la operación de un restaurante. Está dise
 
 Versión declarada: `1.0.1+2`.
 
+## por si todo sale mal y algo no funciona
+
+´´´bash
+  cd /Volumes/SATECHI/devkosmosyne-portfolio/build/Restaurante_La_Pe-a
+  flutter clean && flutter pub get && flutter analyze && flutter build web --release
+´´´
+
 ## Qué hace el programa
 
 El sistema cubre estas áreas:

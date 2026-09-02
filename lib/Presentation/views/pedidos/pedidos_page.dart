@@ -39,9 +39,23 @@ class _PedidosPageState extends ConsumerState<PedidosPage> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(pedidosProvider);
+    final isMobile = MediaQuery.sizeOf(context).width < 640;
 
     return Scaffold(
       appBar: AppBar(
+        leading: isMobile
+            ? Builder(
+                builder: (context) => IconButton(
+                  icon: const Icon(Icons.menu_rounded),
+                  tooltip: 'Menú',
+                  onPressed: () {
+                    context
+                        .findRootAncestorStateOfType<ScaffoldState>()
+                        ?.openDrawer();
+                  },
+                ),
+              )
+            : null,
         title: const Text('Gestión de Pedidos'),
         actions: [
           IconButton(
@@ -386,7 +400,11 @@ class _PedidosPageState extends ConsumerState<PedidosPage> {
   Future<void> _cambiarEstado(Pedido pedido, EstadoPedido nuevoEstado) async {
     final success = await ref
         .read(pedidosProvider.notifier)
-        .cambiarEstado(pedido.id, nuevoEstado, sl<TenantContext>().restaurantId);
+        .cambiarEstado(
+          pedido.id,
+          nuevoEstado,
+          sl<TenantContext>().restaurantId,
+        );
 
     if (!success) return;
 

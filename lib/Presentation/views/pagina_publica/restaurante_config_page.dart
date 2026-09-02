@@ -205,6 +205,7 @@ class _RestauranteConfigPageState extends ConsumerState<RestauranteConfigPage> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(publicConfigProvider);
+    final isMobile = MediaQuery.sizeOf(context).width < 640;
 
     if (state.isLoading) {
       return const Scaffold(
@@ -219,6 +220,19 @@ class _RestauranteConfigPageState extends ConsumerState<RestauranteConfigPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F0EB),
       appBar: AppBar(
+        leading: isMobile
+            ? Builder(
+                builder: (context) => IconButton(
+                  icon: const Icon(Icons.menu_rounded),
+                  tooltip: 'Menú',
+                  onPressed: () {
+                    context
+                        .findRootAncestorStateOfType<ScaffoldState>()
+                        ?.openDrawer();
+                  },
+                ),
+              )
+            : null,
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         title: const Text('Página pública'),

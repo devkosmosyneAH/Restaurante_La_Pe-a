@@ -41,9 +41,23 @@ class _MesasPageState extends ConsumerState<MesasPage> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(mesasProvider);
+    final isMobile = MediaQuery.sizeOf(context).width < 640;
 
     return Scaffold(
       appBar: AppBar(
+        leading: isMobile
+            ? Builder(
+                builder: (context) => IconButton(
+                  icon: const Icon(Icons.menu_rounded),
+                  tooltip: 'Menú',
+                  onPressed: () {
+                    context
+                        .findRootAncestorStateOfType<ScaffoldState>()
+                        ?.openDrawer();
+                  },
+                ),
+              )
+            : null,
         title: const Text('Gestión de Mesas'),
         actions: [
           IconButton(

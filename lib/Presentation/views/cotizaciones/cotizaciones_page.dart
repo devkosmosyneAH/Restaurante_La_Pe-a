@@ -47,6 +47,7 @@ class _CotizacionesPageState extends ConsumerState<CotizacionesPage> {
       symbol: AppConstants.currencySymbol,
       decimalDigits: 2,
     );
+    final isMobile = MediaQuery.sizeOf(context).width < 640;
 
     return Scaffold(
       floatingActionButton: FloatingActionButton.extended(
@@ -57,17 +58,29 @@ class _CotizacionesPageState extends ConsumerState<CotizacionesPage> {
         foregroundColor: Colors.white,
       ),
       appBar: AppBar(
-        leading: IconButton(
-          tooltip: 'Volver al menú',
-          icon: const Icon(Icons.arrow_back_rounded),
-          onPressed: () {
-            if (Navigator.of(context).canPop()) {
-              Navigator.of(context).maybePop();
-              return;
-            }
-            context.go(AppRouter.menu);
-          },
-        ),
+        leading: isMobile
+            ? Builder(
+                builder: (context) => IconButton(
+                  icon: const Icon(Icons.menu_rounded),
+                  tooltip: 'Menú',
+                  onPressed: () {
+                    context
+                        .findRootAncestorStateOfType<ScaffoldState>()
+                        ?.openDrawer();
+                  },
+                ),
+              )
+            : IconButton(
+                tooltip: 'Volver al menú',
+                icon: const Icon(Icons.arrow_back_rounded),
+                onPressed: () {
+                  if (Navigator.of(context).canPop()) {
+                    Navigator.of(context).maybePop();
+                    return;
+                  }
+                  context.go(AppRouter.menu);
+                },
+              ),
         title: const Text('Cotizaciones'),
         actions: [
           IconButton(

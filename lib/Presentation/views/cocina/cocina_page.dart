@@ -104,8 +104,22 @@ class _CocinaPageState extends ConsumerState<CocinaPage> {
   PreferredSizeWidget _buildAppBar(CocinaState state) {
     final cs = Theme.of(context).colorScheme;
     final isCompact = MediaQuery.sizeOf(context).width < 430;
+    final isMobile = MediaQuery.sizeOf(context).width < 640;
     return AppBar(
       elevation: 0,
+      leading: isMobile
+          ? Builder(
+              builder: (context) => IconButton(
+                icon: const Icon(Icons.menu_rounded),
+                tooltip: 'Menú',
+                onPressed: () {
+                  context
+                      .findRootAncestorStateOfType<ScaffoldState>()
+                      ?.openDrawer();
+                },
+              ),
+            )
+          : null,
       title: Row(
         mainAxisSize: MainAxisSize.min,
         children: [

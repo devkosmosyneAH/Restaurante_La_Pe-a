@@ -237,8 +237,23 @@ class _CotizacionManualFormPageState
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = MediaQuery.sizeOf(context).width < 640;
+
     return Scaffold(
       appBar: AppBar(
+        leading: isMobile
+            ? Builder(
+                builder: (context) => IconButton(
+                  icon: const Icon(Icons.menu_rounded),
+                  tooltip: 'Menú',
+                  onPressed: () {
+                    context
+                        .findRootAncestorStateOfType<ScaffoldState>()
+                        ?.openDrawer();
+                  },
+                ),
+              )
+            : null,
         title: Text(_esEdicion ? 'Editar cotización' : 'Nueva cotización'),
         actions: [
           if (_isSaving)

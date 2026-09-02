@@ -59,9 +59,23 @@ class _ReservasPageState extends ConsumerState<ReservasPage> {
           .toList(),
       orElse: () => const <Cotizacion>[],
     );
+    final isMobile = MediaQuery.sizeOf(context).width < 640;
 
     return Scaffold(
       appBar: AppBar(
+        leading: isMobile
+            ? Builder(
+                builder: (context) => IconButton(
+                  icon: const Icon(Icons.menu_rounded),
+                  tooltip: 'Menú',
+                  onPressed: () {
+                    context
+                        .findRootAncestorStateOfType<ScaffoldState>()
+                        ?.openDrawer();
+                  },
+                ),
+              )
+            : null,
         title: const Text('Reservaciones'),
         actions: [
           IconButton(

@@ -96,102 +96,121 @@ class _BackupPageState extends State<BackupPage> {
   ).showSnackBar(SnackBar(content: Text(value)));
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Respaldos locales')),
-    body: FutureBuilder<Map<String, dynamic>>(
-      future: _overview,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState != ConnectionState.done) {
-          return const AppLoadingView(message: 'Revisando respaldos...');
-        }
-        if (snapshot.hasError) {
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.cloud_off_rounded, size: 42),
-                  const SizedBox(height: 12),
-                  const Text('No se pudieron revisar los respaldos.'),
-                  const SizedBox(height: 12),
-                  FilledButton.icon(
-                    onPressed: () => setState(_reload),
-                    icon: const Icon(Icons.refresh_rounded),
-                    label: const Text('Reintentar'),
-                  ),
-                ],
-              ),
-            ),
-          );
-        }
-        final data = snapshot.data!;
-        final entries =
-            (data['backups'] as List<dynamic>? ?? const <dynamic>[]);
-        return ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            Card(
+  Widget build(BuildContext context) {
+    final isMobile = MediaQuery.sizeOf(context).width < 640;
+
+    return Scaffold(
+      appBar: AppBar(
+        leading: isMobile
+            ? Builder(
+                builder: (context) => IconButton(
+                  icon: const Icon(Icons.menu_rounded),
+                  tooltip: 'Menú',
+                  onPressed: () {
+                    context
+                        .findRootAncestorStateOfType<ScaffoldState>()
+                        ?.openDrawer();
+                  },
+                ),
+              )
+            : null,
+        title: const Text('Respaldos locales'),
+      ),
+      body: FutureBuilder<Map<String, dynamic>>(
+        future: _overview,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState != ConnectionState.done) {
+            return const AppLoadingView(message: 'Revisando respaldos...');
+          }
+          if (snapshot.hasError) {
+            return Center(
               child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.storage_rounded, size: 36),
-                    const SizedBox(width: 12),
-                    const Expanded(
-                      child: Text(
-                        'Los respaldos se guardan localmente en este dispositivo/navegador.',
-                      ),
-                    ),
+                    const Icon(Icons.cloud_off_rounded, size: 42),
+                    const SizedBox(height: 12),
+                    const Text('No se pudieron revisar los respaldos.'),
+                    const SizedBox(height: 12),
                     FilledButton.icon(
-                      onPressed: _busy ? null : _create,
-                      icon: const Icon(Icons.backup),
-                      label: const Text('Crear'),
+                      onPressed: () => setState(_reload),
+                      icon: const Icon(Icons.refresh_rounded),
+                      label: const Text('Reintentar'),
                     ),
                   ],
                 ),
               ),
-            ),
-            const SizedBox(height: 16),
-            if (entries.isEmpty)
-              const Padding(
-                padding: EdgeInsets.all(24),
-                child: Center(child: Text('Aún no hay respaldos locales.')),
-              )
-            else
-              ...entries.map((raw) {
-                final item = raw as Map<String, dynamic>;
-                final created = item['created'] is DateTime
-                    ? item['created'] as DateTime
-                    : DateTime.tryParse(item['created']?.toString() ?? '');
-                final name = item['name']?.toString() ?? 'respaldo';
-                return Card(
-                  child: ListTile(
-                    leading: const Icon(Icons.archive_outlined),
-                    title: Text(name),
-                    subtitle: Text(
-                      created == null ? '' : _dateFormat.format(created),
-                    ),
-                    trailing: Wrap(
-                      children: [
-                        IconButton(
-                          tooltip: 'Restaurar',
-                          onPressed: () => _restore(name),
-                          icon: const Icon(Icons.restore),
+            );
+          }
+          final data = snapshot.data!;
+          final entries =
+              (data['backups'] as List<dynamic>? ?? const <dynamic>[]);
+          return ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.storage_rounded, size: 36),
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: Text(
+                          'Los respaldos se guardan localmente en este dispositivo/navegador.',
                         ),
-                        IconButton(
-                          tooltip: 'Eliminar',
-                          onPressed: () => _delete(name),
-                          icon: const Icon(Icons.delete_outline),
-                        ),
-                      ],
-                    ),
+                      ),
+                      FilledButton.icon(
+                        onPressed: _busy ? null : _create,
+                        icon: const Icon(Icons.backup),
+                        label: const Text('Crear'),
+                      ),
+                    ],
                   ),
-                );
-              }),
-          ],
-        );
-      },
-    ),
-  );
+                ),
+              ),
+              const SizedBox(height: 16),
+              if (entries.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.all(24),
+                  child: Center(child: Text('Aún no hay respaldos locales.')),
+                )
+              else
+                ...entries.map((raw) {
+                  final item = raw as Map<String, dynamic>;
+                  final created = item['created'] is DateTime
+                      ? item['created'] as DateTime
+                      : DateTime.tryParse(item['created']?.toString() ?? '');
+                  final name = item['name']?.toString() ?? 'respaldo';
+                  return Card(
+                    child: ListTile(
+                      leading: const Icon(Icons.archive_outlined),
+                      title: Text(name),
+                      subtitle: Text(
+                        created == null ? '' : _dateFormat.format(created),
+                      ),
+                      trailing: Wrap(
+                        children: [
+                          IconButton(
+                            tooltip: 'Restaurar',
+                            onPressed: () => _restore(name),
+                            icon: const Icon(Icons.restore),
+                          ),
+                          IconButton(
+                            tooltip: 'Eliminar',
+                            onPressed: () => _delete(name),
+                            icon: const Icon(Icons.delete_outline),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }),
+            ],
+          );
+        },
+      ),
+    );
+  }
 }
