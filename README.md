@@ -8,7 +8,7 @@ Versión declarada: `1.0.1+2`.
 
 ´´´bash
   cd /Volumes/SATECHI/devkosmosyne-portfolio/build/Restaurante_La_Pe-a
-  flutter clean && flutter pub get && flutter analyze && flutter build web --release
+  flutter clean && flutter pub get && flutter build web --release
 ´´´
 
 ## Qué hace el programa
