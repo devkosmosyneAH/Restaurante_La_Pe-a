@@ -20,12 +20,19 @@ grep -o "AUTH_TRACE_SERVICE" build/web/main.dart.js | head
 
 y:
 
-grep -o "AUTH_TRACE_PROVIDER" build/web/main.dart.js | headpor
+grep -o "AUTH_TRACE_PROVIDER" build/web/main.dart.js | head
 
-si todo sale mal y algo no funciona
+- COMANDO FINAL FUNCIONAL PARA LANZAR A PRODUCCIÓN
+
+- PASO 1
 
   cd /Volumes/SATECHI/devkosmosyne-portfolio/build/Restaurante_La_Pe-a
-  flutter clean && flutter pub get && flutter build web --release
+  flutter clean && flutter pub get && flutter build web --release && mv build/web docs
+
+- "EN CASO DE QUE SALGA UNA CARPETA WEB O ALGO NO SE ESTÉ ACTUALIZANDO USA ESTE PASO 2 Y LUEGO EL PASO 1"
+
+-- PASO 2
+rm -rf docs
 ```
 
 ## Qué hace el programa
