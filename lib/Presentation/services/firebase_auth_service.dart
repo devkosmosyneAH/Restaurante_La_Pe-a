@@ -89,6 +89,10 @@ class FirebaseAuthService {
     required String password,
   }) async {
     try {
+      debugPrint('emailIsEmpty = ${email.trim().isEmpty}');
+      debugPrint('emailLength = ${email.trim().length}');
+      debugPrint('passwordIsEmpty = ${password.isEmpty}');
+      debugPrint('passwordLength = ${password.length}');
       final credential = await _firebaseAuth
           .signInWithEmailAndPassword(email: email.trim(), password: password)
           .timeout(const Duration(seconds: 15));
@@ -108,7 +112,13 @@ class FirebaseAuthService {
         message:
             'La autenticación está tardando demasiado. Comprueba tu conexión e inténtalo de nuevo.',
       );
-    } on FirebaseAuthException catch (error) {
+    } on FirebaseAuthException catch (error, stackTrace) {
+      debugPrint('=== FIREBASE AUTH ORIGINAL ERROR ===');
+      debugPrint('code = ${error.code}');
+      debugPrint('message = ${error.message}');
+      debugPrint('plugin = ${error.plugin}');
+      debugPrint('stackTrace = $stackTrace');
+      debugPrint('====================================');
       return FirebaseAuthenticationResult.failure(
         code: 'authentication_failed',
         message: _mapAuthError(error.code),
