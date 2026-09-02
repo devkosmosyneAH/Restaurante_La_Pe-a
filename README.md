@@ -4,12 +4,29 @@ Aplicación Flutter para administrar la operación de un restaurante. Está dise
 
 Versión declarada: `1.0.1+2`.
 
-## por si todo sale mal y algo no funciona
+## Ejecuta
 
-´´´bash
+```bash
+
+ls -lh build/web/main.dart.js
+
+Luego:
+
+stat -f "%Sm" -t "%Y-%m-%d %H:%M:%S" build/web/main.dart.js
+
+Y finalmente:
+
+grep -o "AUTH_TRACE_SERVICE" build/web/main.dart.js | head
+
+y:
+
+grep -o "AUTH_TRACE_PROVIDER" build/web/main.dart.js | headpor
+
+si todo sale mal y algo no funciona
+
   cd /Volumes/SATECHI/devkosmosyne-portfolio/build/Restaurante_La_Pe-a
   flutter clean && flutter pub get && flutter build web --release
-´´´
+```
 
 ## Qué hace el programa
 
