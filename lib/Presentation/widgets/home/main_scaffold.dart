@@ -135,7 +135,13 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
   Widget build(BuildContext context) {
     final auth = sl<AuthChangeNotifier>();
     final usuario = auth.usuario;
-    final rol = usuario?.rol ?? RolUsuario.mesero;
+
+    // TODO: DEBUG TEMPORAL - remover después de diagnosticar
+    if (usuario == null) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    final rol = usuario.rol;
     final navItems = _itemsForRole(rol);
 
     final pendientesCount = ref.watch(
@@ -330,27 +336,25 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
                               fontSize: 12,
                             ),
                           ),
-                          if (usuario != null) ...[
-                            const SizedBox(height: 12),
-                            Text(
-                              usuario.nombre,
-                              style: const TextStyle(
-                                color: Colors.black87,
-                                fontWeight: FontWeight.w500,
-                                fontSize: 13,
-                              ),
-                              textAlign: TextAlign.center,
-                              overflow: TextOverflow.ellipsis,
+                          const SizedBox(height: 12),
+                          Text(
+                            usuario.nombre,
+                            style: const TextStyle(
+                              color: Colors.black87,
+                              fontWeight: FontWeight.w500,
+                              fontSize: 13,
                             ),
-                            Text(
-                              usuario.rol.label,
-                              style: TextStyle(
-                                color: AppColors.secondary,
-                                fontSize: 12,
-                              ),
-                              overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            usuario.rol.label,
+                            style: TextStyle(
+                              color: AppColors.secondary,
+                              fontSize: 12,
                             ),
-                          ],
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ],
                       ],
                     ),

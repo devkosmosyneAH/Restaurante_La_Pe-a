@@ -324,12 +324,32 @@ class AuthChangeNotifier extends ChangeNotifier {
   Future<void> restoreSession() async {
     if (_manualLoginInProgress || isAuthenticated) return;
     final generation = _sessionGeneration;
+    // TODO: DEBUG TEMPORAL - remover después de diagnosticar
+    debugPrint(
+      '[${DateTime.now().toIso8601String()}] ROL - valor inicial/default: '
+      '${_usuario?.rol.value ?? 'NULL (sin rol confirmado)'}',
+    );
     _setSessionRestoring(true);
     try {
+      // TODO: DEBUG TEMPORAL - remover después de diagnosticar
+      debugPrint(
+        '[${DateTime.now().toIso8601String()}] ROL - consultando fuente real: '
+        'SharedPreferences/Firebase',
+      );
       final persisted = await SessionService.getCurrentUserSession();
+      // TODO: DEBUG TEMPORAL - remover después de diagnosticar
+      debugPrint(
+        '[${DateTime.now().toIso8601String()}] ROL - caché local: '
+        '${persisted?['rol'] ?? persisted?['role'] ?? 'NO DISPONIBLE'}',
+      );
       if (_manualLoginInProgress || generation != _sessionGeneration) return;
       final firebaseAuth = sl<FirebaseAuthService>();
       final firebaseSession = await firebaseAuth.restoreSessionFromFirebase();
+      // TODO: DEBUG TEMPORAL - remover después de diagnosticar
+      debugPrint(
+        '[${DateTime.now().toIso8601String()}] ROL - obtenido de Firebase: '
+        '${firebaseSession?['rol'] ?? firebaseSession?['role'] ?? 'NO DISPONIBLE'}',
+      );
       if (_manualLoginInProgress || generation != _sessionGeneration) return;
       if (firebaseSession == null) return;
 
@@ -344,6 +364,11 @@ class AuthChangeNotifier extends ChangeNotifier {
       }
 
       final restored = _fromSessionMap(firebaseSession);
+      // TODO: DEBUG TEMPORAL - remover después de diagnosticar
+      debugPrint(
+        '[${DateTime.now().toIso8601String()}] ROL - actualizado en UI: '
+        '${restored.rol.value}',
+      );
       if (!restored.activo) {
         unawaited(_audit('session_invalid_inactive', userId: restored.id));
         await SessionService.logout();
