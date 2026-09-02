@@ -118,6 +118,9 @@ class AuthChangeNotifier extends ChangeNotifier {
         ),
         successStatus: 'COMPLETADO',
       );
+      debugPrint(
+        'AUTH_TRACE_PROVIDER failureCode=${result.failureCode}',
+      );
       if (!result.isAuthenticated) {
         final failureCode = result.failureCode;
         diagnostic.line(

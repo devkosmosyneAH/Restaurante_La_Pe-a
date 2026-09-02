@@ -119,6 +119,12 @@ class FirebaseAuthService {
       debugPrint('plugin = ${error.plugin}');
       debugPrint('stackTrace = $stackTrace');
       debugPrint('====================================');
+      debugPrint(
+        'AUTH_TRACE_SERVICE code=${error.code}',
+      );
+      debugPrint(
+        'AUTH_TRACE_SERVICE_RESULT code=${error.code}',
+      );
       return FirebaseAuthenticationResult.failure(
         code: error.code,
         message: _mapAuthError(error.code),
