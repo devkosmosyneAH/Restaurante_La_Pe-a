@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:restaurant_app/Presentation/core/database/database_helper.dart';
+import 'package:restaurant_app/Presentation/services/diagnostic_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
@@ -13,15 +14,21 @@ abstract class SensitiveSessionStore {
 }
 
 class SessionSaveResult {
-  const SessionSaveResult._({required this.success, this.error});
+  const SessionSaveResult._({
+    required this.success,
+    this.error,
+    this.diagnosticLog,
+  });
 
-  const SessionSaveResult.success() : this._(success: true);
+  const SessionSaveResult.success({String? diagnosticLog})
+    : this._(success: true, diagnosticLog: diagnosticLog);
 
-  const SessionSaveResult.failure(Object error)
-    : this._(success: false, error: error);
+  const SessionSaveResult.failure(Object error, {String? diagnosticLog})
+    : this._(success: false, error: error, diagnosticLog: diagnosticLog);
 
   final bool success;
   final Object? error;
+  final String? diagnosticLog;
 }
 
 class InMemorySensitiveSessionStore implements SensitiveSessionStore {
@@ -140,38 +147,89 @@ class SessionService {
     } catch (_) {
       // Fallback en entornos sin soporte del plugin seguro.
     }
-    return _fallbackStore
-        .read(key: _secureSessionKey)
-        .timeout(_storageTimeout);
+    return _fallbackStore.read(key: _secureSessionKey).timeout(_storageTimeout);
   }
 
-  static Future<void> _writeSensitiveSessionJson(String value) async {
+  // TODO: DEBUG TEMPORAL - remover después de diagnosticar
+  static Future<void> _writeSensitiveSessionJson(
+    String value, {
+    DiagnosticLogger? logger,
+  }) async {
     var persisted = false;
+    final secureStarted = DateTime.now();
     try {
       await _sensitiveStore
           .write(key: _secureSessionKey, value: value)
           .timeout(_storageTimeout);
       persisted = true;
-    } catch (_) {
+      logger?.result('FlutterSecureStorage.write()', secureStarted, 'OK');
+    } catch (error, stackTrace) {
       // Si el plugin no está disponible, usar fallback persistente en SharedPreferences.
+      logger?.result(
+        'FlutterSecureStorage.write()',
+        secureStarted,
+        'FALLÓ (se intentará fallback)',
+        error: error,
+        stackTrace: stackTrace,
+      );
     }
 
     if (persisted) {
-      await _fallbackStore.delete(key: _secureSessionKey).timeout(_storageTimeout);
+      final cleanupStarted = DateTime.now();
+      try {
+        await _fallbackStore
+            .delete(key: _secureSessionKey)
+            .timeout(_storageTimeout);
+        logger?.result(
+          'SharedPreferences.remove(secure legacy)',
+          cleanupStarted,
+          'OK',
+        );
+      } catch (error, stackTrace) {
+        logger?.result(
+          'SharedPreferences.remove(secure legacy)',
+          cleanupStarted,
+          'FALLÓ',
+          error: error,
+          stackTrace: stackTrace,
+        );
+        rethrow;
+      }
     } else {
-      await _fallbackStore
-          .write(key: _secureSessionKey, value: value)
-          .timeout(_storageTimeout);
+      final fallbackStarted = DateTime.now();
+      try {
+        await _fallbackStore
+            .write(key: _secureSessionKey, value: value)
+            .timeout(_storageTimeout);
+        logger?.result(
+          'SharedPreferences.fallback.write()',
+          fallbackStarted,
+          'OK',
+        );
+      } catch (error, stackTrace) {
+        logger?.result(
+          'SharedPreferences.fallback.write()',
+          fallbackStarted,
+          'FALLÓ',
+          error: error,
+          stackTrace: stackTrace,
+        );
+        rethrow;
+      }
     }
   }
 
   static Future<void> _deleteSensitiveSessionJson() async {
     try {
-      await _sensitiveStore.delete(key: _secureSessionKey).timeout(_storageTimeout);
+      await _sensitiveStore
+          .delete(key: _secureSessionKey)
+          .timeout(_storageTimeout);
     } catch (_) {
       // Ignorar; el fallback se limpia igual.
     }
-    await _fallbackStore.delete(key: _secureSessionKey).timeout(_storageTimeout);
+    await _fallbackStore
+        .delete(key: _secureSessionKey)
+        .timeout(_storageTimeout);
   }
 
   static Future<void> logSecurityEvent({
@@ -202,10 +260,29 @@ class SessionService {
   /// Detailed outcome used by authentication hydration. Keeping the bool API
   /// preserves existing callers while exposing storage failures explicitly.
   static Future<SessionSaveResult> saveUserSessionDetailed(
-    Map<String, dynamic> userData,
-  ) async {
+    Map<String, dynamic> userData, {
+    DiagnosticLogger? logger,
+  }) async {
     try {
-      final prefs = await _preferences();
+      final preferencesStarted = DateTime.now();
+      late final SharedPreferences prefs;
+      try {
+        prefs = await _preferences();
+        logger?.result(
+          'SharedPreferences.getInstance()',
+          preferencesStarted,
+          'OK',
+        );
+      } catch (error, stackTrace) {
+        logger?.result(
+          'SharedPreferences.getInstance()',
+          preferencesStarted,
+          'FALLÓ',
+          error: error,
+          stackTrace: stackTrace,
+        );
+        rethrow;
+      }
 
       final normalizedUserData = Map<String, dynamic>.from(userData);
       if (normalizedUserData.containsKey('role') &&
@@ -218,21 +295,39 @@ class SessionService {
       }
 
       final userJson = jsonEncode(normalizedUserData);
-      await _writeSensitiveSessionJson(userJson);
+      await _writeSensitiveSessionJson(userJson, logger: logger);
+
+      final legacyStarted = DateTime.now();
       final legacyRemoved = await prefs
           .remove(_legacySessionKey)
           .timeout(_storageTimeout);
+      logger?.result(
+        'SharedPreferences.remove(legacy session)',
+        legacyStarted,
+        legacyRemoved ? 'OK' : 'FALLÓ',
+      );
+
+      final loggedInStarted = DateTime.now();
       final loggedInSaved = await prefs
           .setBool(_isLoggedInKey, true)
           .timeout(_storageTimeout);
+      logger?.result(
+        'SharedPreferences.setBool(is_logged_in)',
+        loggedInStarted,
+        loggedInSaved ? 'OK' : 'FALLÓ',
+      );
       if (!legacyRemoved || !loggedInSaved) {
-        return SessionSaveResult.failure(StateError('session_storage_failed'));
+        final error = StateError('session_storage_failed');
+        return SessionSaveResult.failure(error, diagnosticLog: logger?.text);
       }
 
-      return const SessionSaveResult.success();
-    } catch (error) {
+      return SessionSaveResult.success(diagnosticLog: logger?.text);
+    } catch (error, stackTrace) {
       debugPrint('session_storage_failed: $error');
-      return SessionSaveResult.failure(error);
+      logger?.line(
+        'ERROR saveUserSessionDetailed: ${error.runtimeType}: $error\nStackTrace:\n$stackTrace',
+      );
+      return SessionSaveResult.failure(error, diagnosticLog: logger?.text);
     }
   }
 
@@ -318,11 +413,15 @@ class SessionService {
     try {
       final prefs = await _preferences();
       final attempts = (prefs.getInt(_failedPinAttemptsKey) ?? 0) + 1;
-      await prefs.setInt(_failedPinAttemptsKey, attempts).timeout(_storageTimeout);
+      await prefs
+          .setInt(_failedPinAttemptsKey, attempts)
+          .timeout(_storageTimeout);
 
       if (attempts >= maxAttempts) {
         final lockUntil = DateTime.now().add(lockDuration).toIso8601String();
-        await prefs.setString(_pinLockUntilKey, lockUntil).timeout(_storageTimeout);
+        await prefs
+            .setString(_pinLockUntilKey, lockUntil)
+            .timeout(_storageTimeout);
       }
 
       return attempts;
@@ -366,7 +465,9 @@ class SessionService {
     try {
       final prefs = await _preferences();
       final attempts = (prefs.getInt(_failedLoginAttemptsKey) ?? 0) + 1;
-      await prefs.setInt(_failedLoginAttemptsKey, attempts).timeout(_storageTimeout);
+      await prefs
+          .setInt(_failedLoginAttemptsKey, attempts)
+          .timeout(_storageTimeout);
       if (attempts >= maxAttempts) {
         await prefs
             .setString(

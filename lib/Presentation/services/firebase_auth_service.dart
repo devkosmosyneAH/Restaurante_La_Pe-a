@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:restaurant_app/Presentation/core/constants/app_constants.dart';
 import 'package:restaurant_app/Presentation/core/database/database_helper.dart';
 import 'package:restaurant_app/Presentation/services/session_service.dart';
+import 'package:restaurant_app/Presentation/services/diagnostic_logger.dart';
 
 /// Result of the only operation that decides access: Firebase Authentication.
 /// Profile, SQLite and browser storage are intentionally excluded.
@@ -89,10 +90,7 @@ class FirebaseAuthService {
   }) async {
     try {
       final credential = await _firebaseAuth
-          .signInWithEmailAndPassword(
-            email: email.trim(),
-            password: password,
-          )
+          .signInWithEmailAndPassword(email: email.trim(), password: password)
           .timeout(const Duration(seconds: 15));
       final user = credential.user;
       if (user == null) {
@@ -196,6 +194,7 @@ class FirebaseAuthService {
   Future<PostLoginResult> completePostLogin(
     User user, {
     Map<String, dynamic>? extraProfileData,
+    DiagnosticLogger? diagnosticLogger,
   }) async {
     final issues = <PostLoginIssue>[];
     Map<String, dynamic>? profile;
@@ -232,7 +231,8 @@ class FirebaseAuthService {
     // La sesión se persiste para el usuario recién autenticado. En algunas
     // plataformas el estado de Firebase puede llegar con retraso; no debemos
     // cancelar el guardado solo porque currentUser no esté sincronizado aún.
-    final isCurrentAuthUser = currentUser == null || currentUser!.uid == user.uid;
+    final isCurrentAuthUser =
+        currentUser == null || currentUser!.uid == user.uid;
     if (!isCurrentAuthUser) {
       return PostLoginResult(
         session: session,
@@ -240,9 +240,15 @@ class FirebaseAuthService {
         isAuthorized: isAuthorized,
       );
     }
-    final persisted = await SessionService.saveUserSessionDetailed(session);
+    final persisted = await SessionService.saveUserSessionDetailed(
+      session,
+      logger: diagnosticLogger,
+    );
     if (!persisted.success) {
-      issues.add(PostLoginIssue('session_storage_failed', persisted.error!));
+      final detail = persisted.diagnosticLog == null
+          ? persisted.error!
+          : StateError('${persisted.error}\n${persisted.diagnosticLog}');
+      issues.add(PostLoginIssue('session_storage_failed', detail));
       debugPrint('post_login.session_storage_failed: ${persisted.error}');
     }
     return PostLoginResult(
@@ -360,7 +366,8 @@ class FirebaseAuthService {
       'wrong-password' => 'Las credenciales ingresadas no son validas.',
       'email-already-in-use' => 'No fue posible completar el registro.',
       'weak-password' => 'La contrasena no cumple los requisitos de seguridad.',
-      'operation-not-allowed' => 'El metodo de autenticacion no esta habilitado.',
+      'operation-not-allowed' =>
+        'El metodo de autenticacion no esta habilitado.',
       _ => 'No fue posible completar la solicitud de autenticacion.',
     };
   }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:restaurant_app/Presentation/core/theme/app_colors.dart';
 
 class AuthEmailPasswordForm extends StatelessWidget {
@@ -49,10 +50,44 @@ class AuthEmailPasswordForm extends StatelessWidget {
         ),
         if (errorText != null) ...[
           const SizedBox(height: 12),
-          Text(
-            errorText!,
-            style: const TextStyle(color: AppColors.error, fontSize: 13),
-            textAlign: TextAlign.center,
+          // TODO: DEBUG TEMPORAL - remover después de diagnosticar
+          Container(
+            constraints: const BoxConstraints(maxHeight: 260),
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: AppColors.error.withValues(alpha: 0.05),
+              border: Border.all(
+                color: AppColors.error.withValues(alpha: 0.25),
+              ),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: SingleChildScrollView(
+              child: SelectableText(
+                errorText!,
+                style: const TextStyle(
+                  color: AppColors.error,
+                  fontSize: 12,
+                  height: 1.35,
+                  fontFamily: 'monospace',
+                ),
+              ),
+            ),
+          ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              // TODO: DEBUG TEMPORAL - remover después de diagnosticar
+              onPressed: () async {
+                await Clipboard.setData(ClipboardData(text: errorText!));
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Diagnóstico copiado.')),
+                  );
+                }
+              },
+              icon: const Icon(Icons.copy_rounded, size: 16),
+              label: const Text('Copiar diagnóstico'),
+            ),
           ),
         ],
         const SizedBox(height: 18),

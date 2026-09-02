@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
@@ -8,11 +10,16 @@ class FirebaseAppInitializer {
 
   static Future<void>? _initialization;
 
+  // TODO: DEBUG TEMPORAL - remover después de diagnosticar
+  static String persistenceDiagnostic = 'NO EJECUTADO';
+
   static String? _readEnv(String key) {
     try {
       return dotenv.env[key]?.trim();
     } on Object catch (error) {
-      debugPrint('Firebase env unavailable before dotenv init for $key: $error');
+      debugPrint(
+        'Firebase env unavailable before dotenv init for $key: $error',
+      );
       return null;
     }
   }
@@ -28,9 +35,7 @@ class FirebaseAppInitializer {
     };
 
     if (kIsWeb) {
-      required.addAll({
-        'FIREBASE_WEB_APP_ID',
-      });
+      required.addAll({'FIREBASE_WEB_APP_ID'});
     } else if (defaultTargetPlatform == TargetPlatform.iOS) {
       required.add('FIREBASE_IOS_APP_ID');
     } else if (defaultTargetPlatform == TargetPlatform.android) {
@@ -125,7 +130,14 @@ class FirebaseAppInitializer {
         await FirebaseAuth.instance
             .setPersistence(Persistence.LOCAL)
             .timeout(const Duration(seconds: 3));
+        // TODO: DEBUG TEMPORAL - remover después de diagnosticar
+        persistenceDiagnostic =
+            '${DateTime.now().toIso8601String()} OK (Persistence.LOCAL)';
       } catch (error) {
+        // TODO: DEBUG TEMPORAL - remover después de diagnosticar
+        final status = error is TimeoutException ? 'TIMEOUT' : 'FALLÓ';
+        persistenceDiagnostic =
+            '${DateTime.now().toIso8601String()} $status ${error.runtimeType}: $error';
         debugPrint('firebase_auth.persistence_unavailable: $error');
       }
       return;

@@ -2,6 +2,9 @@ import 'dart:async';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:restaurant_app/Presentation/core/constants/app_constants.dart';
 import 'package:restaurant_app/Presentation/core/di/injection_container.dart';
 import 'package:restaurant_app/Presentation/core/domain/enums.dart';
@@ -11,6 +14,8 @@ import 'package:restaurant_app/Presentation/core/tenant/tenant_context.dart';
 import 'package:restaurant_app/Presentation/entities/usuarios/usuario.dart';
 import 'package:restaurant_app/Presentation/services/firebase_auth_service.dart';
 import 'package:restaurant_app/Presentation/services/session_service.dart';
+import 'package:restaurant_app/Presentation/services/diagnostic_logger.dart';
+import 'package:restaurant_app/Presentation/services/web_storage_diagnostics.dart';
 
 /// Owns the active Firebase-authenticated user. Browser persistence and local
 /// data enrich the session afterwards, but cannot revoke a valid credential.
@@ -53,42 +58,91 @@ class AuthChangeNotifier extends ChangeNotifier {
     required String email,
     required String password,
   }) async {
-    final generation = ++_sessionGeneration;
+    ++_sessionGeneration;
     _manualLoginInProgress = true;
+    // TODO: DEBUG TEMPORAL - remover después de diagnosticar
+    final diagnostic = DiagnosticLogger();
+    diagnostic.section('CONTEXTO');
+    diagnostic.line(
+      'Timestamp inicio: ${diagnostic.startedAt.toIso8601String()}',
+    );
+    diagnostic.line(
+      'Plataforma: ${kIsWeb ? 'WEB' : defaultTargetPlatform.name} (kIsWeb=$kIsWeb)',
+    );
+    await _captureLoginContext(diagnostic);
+    diagnostic.section('PASOS');
     try {
       final normalizedEmail = email.trim();
       if (normalizedEmail.isEmpty ||
           !RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(normalizedEmail)) {
-        return 'Ingresa un correo electronico valido.';
+        return _diagnosticFailure(
+          diagnostic,
+          'Ingresa un correo electronico valido.',
+        );
       }
-      if (password.length < 6) return 'Las credenciales ingresadas no son validas.';
+      diagnostic.line('Correo validado: OK (valor omitido por seguridad)');
+      if (password.length < 6) {
+        return _diagnosticFailure(
+          diagnostic,
+          'Las credenciales ingresadas no son validas.',
+        );
+      }
+      diagnostic.line('Contrasena validada: OK (valor omitido por seguridad)');
 
-      final lockUntil = await SessionService.getLoginLockUntil();
+      final lockUntil = await diagnostic.measure(
+        'SessionService.getLoginLockUntil()',
+        SessionService.getLoginLockUntil,
+      );
       if (lockUntil != null && lockUntil.isAfter(DateTime.now())) {
-        return 'Demasiados intentos. Espera unos minutos e intentalo de nuevo.';
+        return _diagnosticFailure(
+          diagnostic,
+          'Demasiados intentos. Espera unos minutos e intentalo de nuevo.',
+        );
       }
 
-      await FirebaseAppInitializer.initialize().timeout(
-        const Duration(seconds: 8),
+      await diagnostic.measure(
+        'FirebaseAppInitializer.initialize()',
+        () => FirebaseAppInitializer.initialize().timeout(
+          const Duration(seconds: 8),
+        ),
+      );
+      diagnostic.line(
+        'Firebase Persistence.LOCAL: ${FirebaseAppInitializer.persistenceDiagnostic}',
       );
       final firebase = sl<FirebaseAuthService>();
-      final result = await firebase.signInWithEmailAndPassword(
-        email: normalizedEmail,
-        password: password,
+      final result = await diagnostic.measure(
+        'FirebaseAuth.signInWithEmailAndPassword()',
+        () => firebase.signInWithEmailAndPassword(
+          email: normalizedEmail,
+          password: password,
+        ),
       );
       if (!result.isAuthenticated) {
+        diagnostic.line(
+          'Resultado Firebase: FALLÓ (${result.failureCode}: ${result.message})',
+        );
         final attempts = await SessionService.registerFailedLoginAttempt();
         unawaited(_audit('authentication_failed'));
         if (attempts >= 5) {
-          return 'Demasiados intentos. Espera unos minutos e intentalo de nuevo.';
+          return _diagnosticFailure(
+            diagnostic,
+            'Demasiados intentos. Espera unos minutos e intentalo de nuevo.',
+          );
         }
-        return result.message ?? 'No fue posible autenticar las credenciales.';
+        return _diagnosticFailure(
+          diagnostic,
+          result.message ?? 'No fue posible autenticar las credenciales.',
+        );
       }
 
       final user = result.user!;
+      diagnostic.line('Usuario obtenido: OK uid=${user.uid}');
       // The router listens to this notifier. Publishing a Firebase user before
       // its role is resolved made every account enter as the mesero default.
-      final hydration = await firebase.completePostLogin(user);
+      final hydration = await diagnostic.measure(
+        'FirebaseAuthService.completePostLogin()',
+        () => firebase.completePostLogin(user, diagnosticLogger: diagnostic),
+      );
       for (final issue in hydration.issues) {
         unawaited(
           _audit(
@@ -101,7 +155,10 @@ class AuthChangeNotifier extends ChangeNotifier {
       if (!hydration.isAuthorized) {
         unawaited(_audit('authorization_profile_missing', userId: user.uid));
         await firebase.signOut();
-        return 'Esta cuenta no tiene un rol autorizado para La Peña.';
+        return _diagnosticFailure(
+          diagnostic,
+          'Esta cuenta no tiene un rol autorizado para La Peña.',
+        );
       }
 
       final previous = _usuario;
@@ -123,10 +180,104 @@ class AuthChangeNotifier extends ChangeNotifier {
     } catch (error, stackTrace) {
       debugPrint('authentication_failed: $error');
       debugPrintStack(stackTrace: stackTrace);
-      return 'No fue posible iniciar sesion en este momento.';
+      diagnostic.section('ERROR FINAL');
+      diagnostic.line('Timestamp: ${DateTime.now().toIso8601String()}');
+      diagnostic.line('Tipo: ${error.runtimeType}');
+      diagnostic.line('Mensaje: $error');
+      diagnostic.line(
+        'Firebase Persistence.LOCAL: ${FirebaseAppInitializer.persistenceDiagnostic}',
+      );
+      diagnostic.line('StackTrace completo:\n$stackTrace');
+      return diagnostic.text;
     } finally {
       _manualLoginInProgress = false;
     }
+  }
+
+  // TODO: DEBUG TEMPORAL - remover después de diagnosticar
+  Future<void> _captureLoginContext(DiagnosticLogger diagnostic) async {
+    try {
+      final web = await readWebStorageDiagnostics();
+      diagnostic.line('User-Agent: ${web.userAgent ?? 'NO APLICA'}');
+      diagnostic.line('Modo privado detectado: ${web.privateMode}');
+      diagnostic.line('localStorage disponible: ${web.localStorage}');
+      diagnostic.line('indexedDB disponible: ${web.indexedDb}');
+    } catch (error, stackTrace) {
+      diagnostic.line(
+        'Contexto web: FALLÓ ${error.runtimeType}: $error\n$stackTrace',
+      );
+    }
+
+    final preferencesStarted = DateTime.now();
+    try {
+      await SharedPreferences.getInstance().timeout(const Duration(seconds: 2));
+      diagnostic.result(
+        'SharedPreferences.getInstance() prueba',
+        preferencesStarted,
+        'OK',
+      );
+    } catch (error, stackTrace) {
+      diagnostic.result(
+        'SharedPreferences.getInstance() prueba',
+        preferencesStarted,
+        'FALLÓ',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    final secureStarted = DateTime.now();
+    try {
+      const key = '__login_diagnostic_secure_test__';
+      const store = FlutterSecureStorage();
+      await store
+          .write(key: key, value: 'diagnostic')
+          .timeout(const Duration(seconds: 2));
+      await store.read(key: key).timeout(const Duration(seconds: 2));
+      await store.delete(key: key).timeout(const Duration(seconds: 2));
+      diagnostic.result(
+        'FlutterSecureStorage write/read/delete prueba',
+        secureStarted,
+        'OK',
+      );
+    } catch (error, stackTrace) {
+      diagnostic.result(
+        'FlutterSecureStorage write/read/delete prueba',
+        secureStarted,
+        'FALLÓ',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    final connectivityStarted = DateTime.now();
+    try {
+      final connectivity = await Connectivity().checkConnectivity().timeout(
+        const Duration(seconds: 2),
+      );
+      diagnostic.line(
+        'Conectividad: OK (${connectivity.toString()}) (${DateTime.now().difference(connectivityStarted).inMilliseconds}ms)',
+      );
+    } catch (error, stackTrace) {
+      diagnostic.result(
+        'Conectividad checkConnectivity()',
+        connectivityStarted,
+        'FALLÓ',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  // TODO: DEBUG TEMPORAL - remover después de diagnosticar
+  String _diagnosticFailure(
+    DiagnosticLogger diagnostic,
+    String fallbackMessage,
+  ) {
+    diagnostic.section('ERROR FINAL');
+    diagnostic.line('Timestamp: ${DateTime.now().toIso8601String()}');
+    diagnostic.line('Mensaje funcional: $fallbackMessage');
+    return diagnostic.text;
   }
 
   Future<void> _hydratePostLogin(User user, int generation) async {
@@ -143,7 +294,8 @@ class AuthChangeNotifier extends ChangeNotifier {
 
     if (generation != _sessionGeneration || _usuario?.id != user.uid) return;
     final hydratedUser = _fromSessionMap(hydration.session);
-    if (hydratedUser.rol == _usuario!.rol && hydratedUser.nombre == _usuario!.nombre) {
+    if (hydratedUser.rol == _usuario!.rol &&
+        hydratedUser.nombre == _usuario!.nombre) {
       return;
     }
     _usuario = hydratedUser;
@@ -184,8 +336,10 @@ class AuthChangeNotifier extends ChangeNotifier {
       final persistedUid =
           persisted?['uid']?.toString() ?? persisted?['id']?.toString();
       final firebaseUid =
-          firebaseSession['uid']?.toString() ?? firebaseSession['id']?.toString();
-      if (persisted != null && (persistedUid == null || persistedUid != firebaseUid)) {
+          firebaseSession['uid']?.toString() ??
+          firebaseSession['id']?.toString();
+      if (persisted != null &&
+          (persistedUid == null || persistedUid != firebaseUid)) {
         unawaited(_audit('session_identity_mismatch'));
       }
 
@@ -242,17 +396,25 @@ class AuthChangeNotifier extends ChangeNotifier {
   Usuario _fromSessionMap(Map<String, dynamic> session) {
     final id = session['id'] as String? ?? session['uid'] as String?;
     if (id == null) throw StateError('Session data no contiene id/uid');
-    final role = session['rol'] as String? ?? session['role'] as String? ?? 'mesero';
+    final role =
+        session['rol'] as String? ?? session['role'] as String? ?? 'mesero';
     return Usuario(
       id: id,
       restaurantId: AppConstants.restaurantId,
-      nombre: session['nombre'] as String? ?? session['name'] as String? ?? 'Usuario',
+      nombre:
+          session['nombre'] as String? ??
+          session['name'] as String? ??
+          'Usuario',
       email: session['email'] as String?,
       pin: null,
       rol: RolUsuario.fromString(role),
       activo: session['activo'] as bool? ?? true,
-      createdAt: DateTime.tryParse(session['createdAt'] as String? ?? '') ?? DateTime.now(),
-      updatedAt: DateTime.tryParse(session['updatedAt'] as String? ?? '') ?? DateTime.now(),
+      createdAt:
+          DateTime.tryParse(session['createdAt'] as String? ?? '') ??
+          DateTime.now(),
+      updatedAt:
+          DateTime.tryParse(session['updatedAt'] as String? ?? '') ??
+          DateTime.now(),
     );
   }
 }
