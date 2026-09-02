@@ -3,7 +3,6 @@ import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -17,30 +16,10 @@ import 'package:restaurant_app/Presentation/providers/auth/auth_provider.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
-Future<void> _loadEnvFile() async {
-  final candidates = <String>[
-    if (!kIsWeb) '.env',
-    'assets/env.txt',
-  ];
-
-  for (final envPath in candidates) {
-    try {
-      await dotenv.load(fileName: envPath);
-      debugPrint('DOTENV - loaded from: $envPath');
-      return;
-    } on Object catch (error) {
-      debugPrint('DOTENV - unavailable for $envPath: $error');
-    }
-  }
-
-  debugPrint('DOTENV - no environment file found for this platform.');
-}
-
 Future<void> main() async {
   return runZonedGuarded(
     () async {
       WidgetsFlutterBinding.ensureInitialized();
-      await _loadEnvFile();
 
       FlutterError.onError = (FlutterErrorDetails details) {
         FlutterError.dumpErrorToConsole(details);

@@ -47,7 +47,6 @@ dependencies:
   firebase_core: ^3.2.0
   firebase_auth: ^5.3.0
   firebase_database: ^11.1.0
-  flutter_dotenv: ^5.1.1
 
   # Charts para reportes
   fl_chart: ^0.70.2

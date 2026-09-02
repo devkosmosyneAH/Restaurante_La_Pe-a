@@ -380,6 +380,7 @@ class FirebaseRealtimeSyncCloudBackend implements SyncCloudBackend {
   /// administrativas deben viajar autenticadas, mientras que las lecturas
   /// públicas pueden seguir usando la misma clase sin token.
   Future<Uri> _authenticatedUri(Uri uri) async {
+    await FirebaseAppInitializer.initialize();
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return uri;
 
